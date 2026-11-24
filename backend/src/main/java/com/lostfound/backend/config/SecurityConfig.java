@@ -20,7 +20,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/actuator/health/**", "/error").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/*", "/api/categories").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));

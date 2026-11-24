@@ -118,6 +118,21 @@ class ItemControllerTest {
     }
 
     @Test
+    void categoriesArePublic() throws Exception {
+        mockMvc.perform(get("/api/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Phone"))
+                .andExpect(jsonPath("$.length()").value(6));
+    }
+
+    @Test
+    void errorsExplainWhatWentWrong() throws Exception {
+        mockMvc.perform(get("/api/items/999999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Item not found"));
+    }
+
+    @Test
     void missingItemReturns404() throws Exception {
         mockMvc.perform(get("/api/items/999999")).andExpect(status().isNotFound());
     }
