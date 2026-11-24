@@ -1,6 +1,7 @@
 package com.lostfound.backend.claim;
 
 import com.lostfound.backend.item.Item;
+import com.lostfound.backend.item.ItemCacheEvictor;
 import com.lostfound.backend.item.ItemRepository;
 import com.lostfound.backend.item.ItemResponse;
 import com.lostfound.backend.item.ItemStatus;
@@ -29,15 +30,18 @@ public class ClaimService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ItemCacheEvictor cacheEvictor;
 
     public ClaimService(ClaimRepository claimRepository,
                         ItemRepository itemRepository,
                         UserRepository userRepository,
-                        NotificationService notificationService) {
+                        NotificationService notificationService,
+                        ItemCacheEvictor cacheEvictor) {
         this.claimRepository = claimRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.cacheEvictor = cacheEvictor;
     }
 
     @Transactional
@@ -100,6 +104,7 @@ public class ClaimService {
 
         claim.approve();
         item.markClaimed();
+        cacheEvictor.itemChanged(item.getId());
         notificationService.notify(claim.getClaimant(), NotificationType.CLAIM_APPROVED, item);
 
         // Only one person can get the item back, so everyone else still waiting is declined.
@@ -131,6 +136,7 @@ public class ClaimService {
         }
 
         item.markReturned();
+        cacheEvictor.itemChanged(itemId);
         for (Claim approved : claimRepository.findByItemIdAndStatus(itemId, ClaimStatus.APPROVED)) {
             notificationService.notify(approved.getClaimant(), NotificationType.ITEM_RETURNED, item);
         }

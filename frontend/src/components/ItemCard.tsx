@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import type { Item } from '../api/types'
-import { categoryLabel, formatDate } from '../lib/labels'
+import { categoryLabel, formatDate, formatDistance } from '../lib/labels'
 import { StatusBadge, TypeBadge } from './ui'
 
 export function ItemCard({ item }: { item: Item }) {
@@ -24,7 +24,10 @@ export function ItemCard({ item }: { item: Item }) {
         </div>
         <div className="flex items-center justify-between gap-2">
           <dt className="sr-only">地點</dt>
-          <dd className="truncate">📍 {item.locationText}</dd>
+          <dd className="truncate">
+            📍 {item.locationText}
+            {item.distanceKm != null && <span className="ml-1 text-teal-700">· {formatDistance(item.distanceKm)}</span>}
+          </dd>
           <StatusBadge status={item.status} />
         </div>
       </dl>

@@ -1,8 +1,13 @@
 package com.lostfound.backend.item;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * An item as sent to clients. Serializable so it can be stored in the Redis cache.
+ * {@code distanceKm} is only set when the request searched "near" a point.
+ */
 public record ItemResponse(
         Long id,
         ItemType type,
@@ -19,10 +24,21 @@ public record ItemResponse(
         Long ownerId,
         String ownerDisplayName,
         Instant createdAt,
-        Instant updatedAt
-) {
+        Instant updatedAt,
+        Double distanceKm
+) implements Serializable {
 
     public static ItemResponse from(Item item) {
+        return from(item, null);
+    }
+
+    /** Same as {@link #from(Item)}, plus the distance from the searched point when there is one. */
+    public static ItemResponse from(Item item, ItemSearchCriteria criteria) {
+        Double distanceKm = null;
+        if (criteria != null && criteria.hasLocation() && item.getLat() != null && item.getLng() != null) {
+            double km = GeoDistance.haversineKm(criteria.lat(), criteria.lng(), item.getLat(), item.getLng());
+            distanceKm = Math.round(km * 100) / 100.0;
+        }
         return new ItemResponse(
                 item.getId(),
                 item.getType(),
@@ -39,7 +55,8 @@ public record ItemResponse(
                 item.getOwner().getId(),
                 item.getOwner().getDisplayName(),
                 item.getCreatedAt(),
-                item.getUpdatedAt()
+                item.getUpdatedAt(),
+                distanceKm
         );
     }
 }

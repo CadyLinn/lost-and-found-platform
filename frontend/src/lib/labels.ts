@@ -59,3 +59,7 @@ export function formatDate(isoDate: string): string {
 export function todayIso(): string {
   return new Date().toLocaleDateString('sv-SE')
 }
+
+export function formatDistance(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} 公尺` : `${km.toFixed(1)} 公里`
+}

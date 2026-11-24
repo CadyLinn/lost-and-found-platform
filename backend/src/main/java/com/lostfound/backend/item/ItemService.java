@@ -1,7 +1,9 @@
 package com.lostfound.backend.item;
 
 import com.lostfound.backend.common.PageResponse;
+import com.lostfound.backend.config.CacheConfig;
 import com.lostfound.backend.user.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,13 +16,16 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final ItemCacheEvictor cacheEvictor;
 
     public ItemService(ItemRepository itemRepository,
                        CategoryRepository categoryRepository,
-                       UserRepository userRepository) {
+                       UserRepository userRepository,
+                       ItemCacheEvictor cacheEvictor) {
         this.itemRepository = itemRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.cacheEvictor = cacheEvictor;
     }
 
     @Transactional
@@ -29,17 +34,23 @@ public class ItemService {
         Item item = new Item(userRepository.getReferenceById(userId), request.type(), category);
         applyRequest(item, request, category);
         Item saved = itemRepository.save(item);
+        cacheEvictor.searchResultsChanged();
         return ItemResponse.from(findItem(saved.getId()));
     }
 
+    @Cacheable(cacheNames = CacheConfig.ITEMS, key = "#id")
     @Transactional(readOnly = true)
     public ItemResponse get(Long id) {
         return ItemResponse.from(findItem(id));
     }
 
+    /** Cached briefly: the same popular searches (e.g. "LOST, Phone, page 0") are asked for again and again. */
+    @Cacheable(cacheNames = CacheConfig.ITEM_SEARCH, key = "#criteria.toString() + '|' + #pageable.toString()")
     @Transactional(readOnly = true)
-    public PageResponse<ItemResponse> search(ItemType type, Long categoryId, ItemStatus status, Pageable pageable) {
-        return PageResponse.from(itemRepository.search(type, categoryId, status, pageable), ItemResponse::from);
+    public PageResponse<ItemResponse> search(ItemSearchCriteria criteria, Pageable pageable) {
+        return PageResponse.from(
+                itemRepository.findAll(ItemSpecifications.matching(criteria), pageable),
+                item -> ItemResponse.from(item, criteria));
     }
 
     @Transactional(readOnly = true)
@@ -53,12 +64,14 @@ public class ItemService {
         Category category = findCategory(request.categoryId());
         applyRequest(item, request, category);
         itemRepository.flush();
+        cacheEvictor.itemChanged(id);
         return ItemResponse.from(item);
     }
 
     @Transactional
     public void delete(Long userId, Long id) {
         itemRepository.delete(findOwnedItem(userId, id));
+        cacheEvictor.itemChanged(id);
     }
 
     private void applyRequest(Item item, ItemRequest request, Category category) {

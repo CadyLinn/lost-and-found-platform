@@ -26,6 +26,9 @@ const MESSAGES: Record<string, string> = {
   'Only a claimed item can be marked as returned': '要先接受一個認領，才能標記為已歸還',
   'Claim not found': '找不到這個認領',
   'Notification not found': '找不到這則通知',
+  'Search text is too long': '搜尋文字太長了（最多 100 個字）',
+  'Location search needs lat, lng and radiusKm': '附近搜尋需要位置和範圍',
+  'Invalid location: radiusKm must be between 0 and 50': '搜尋範圍要在 50 公里以內',
 }
 
 function fallbackMessage(status: number): string {

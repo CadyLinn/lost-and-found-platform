@@ -38,6 +38,8 @@ export interface Item {
   ownerDisplayName: string
   createdAt: string
   updatedAt: string
+  /** Only present when searching near a point. */
+  distanceKm: number | null
 }
 
 export interface ItemInput {

@@ -12,13 +12,22 @@ import type {
 } from './types'
 
 export interface ItemFilters {
+  q?: string
   type?: ItemType
   categoryId?: number
+  /** "Near me": all three must be set together. */
+  near?: { lat: number; lng: number; radiusKm: number }
   page?: number
 }
 
 function toQuery(filters: ItemFilters): string {
   const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.near) {
+    params.set('lat', String(filters.near.lat))
+    params.set('lng', String(filters.near.lng))
+    params.set('radiusKm', String(filters.near.radiusKm))
+  }
   if (filters.type) params.set('type', filters.type)
   if (filters.categoryId) params.set('categoryId', String(filters.categoryId))
   params.set('page', String(filters.page ?? 0))
