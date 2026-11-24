@@ -4,6 +4,8 @@ import com.lostfound.backend.common.AppMetrics;
 import com.lostfound.backend.common.PageResponse;
 import com.lostfound.backend.config.CacheConfig;
 import com.lostfound.backend.match.MatchService;
+import com.lostfound.backend.photo.ItemPhoto;
+import com.lostfound.backend.photo.PhotoService;
 import com.lostfound.backend.user.UserRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
@@ -21,19 +23,22 @@ public class ItemService {
     private final ItemCacheEvictor cacheEvictor;
     private final MatchService matchService;
     private final AppMetrics metrics;
+    private final PhotoService photoService;
 
     public ItemService(ItemRepository itemRepository,
                        CategoryRepository categoryRepository,
                        UserRepository userRepository,
                        ItemCacheEvictor cacheEvictor,
                        MatchService matchService,
-                       AppMetrics metrics) {
+                       AppMetrics metrics,
+                       @org.springframework.context.annotation.Lazy PhotoService photoService) {
         this.itemRepository = itemRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.cacheEvictor = cacheEvictor;
         this.matchService = matchService;
         this.metrics = metrics;
+        this.photoService = photoService;
     }
 
     @Transactional
@@ -81,7 +86,10 @@ public class ItemService {
 
     @Transactional
     public void delete(Long userId, Long id) {
-        itemRepository.delete(findOwnedItem(userId, id));
+        Item item = findOwnedItem(userId, id);
+        var photoKeys = item.getPhotos().stream().map(ItemPhoto::getKey).toList();
+        itemRepository.delete(item);
+        photoService.deleteFilesAfterCommit(photoKeys); // the rows go with the item; the files we remove ourselves
         cacheEvictor.itemChanged(id);
     }
 

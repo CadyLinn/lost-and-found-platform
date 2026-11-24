@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { api } from '../api/endpoints'
@@ -37,9 +37,11 @@ interface Props {
   error?: string
   onSubmit: (input: ItemInput) => void
   onCancel: () => void
+  /** Extra fields shown just above the buttons (the photo picker). */
+  photos?: ReactNode
 }
 
-export function ItemForm({ initial, submitLabel, isSubmitting, error, onSubmit, onCancel }: Props) {
+export function ItemForm({ initial, submitLabel, isSubmitting, error, onSubmit, onCancel, photos }: Props) {
   const categories = useQuery({ queryKey: ['categories'], queryFn: api.categories, staleTime: Infinity })
 
   const {
@@ -174,6 +176,8 @@ export function ItemForm({ initial, submitLabel, isSubmitting, error, onSubmit, 
           <input className={inputClass} {...register('verificationQuestion')} />
         </Field>
       )}
+
+      {photos}
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" className={buttonSecondary} onClick={onCancel}>

@@ -1,8 +1,11 @@
 package com.lostfound.backend.item;
 
+import com.lostfound.backend.photo.PhotoResponse;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An item as sent to clients. Serializable so it can be stored in the Redis cache.
@@ -25,7 +28,8 @@ public record ItemResponse(
         String ownerDisplayName,
         Instant createdAt,
         Instant updatedAt,
-        Double distanceKm
+        Double distanceKm,
+        List<PhotoResponse> photos
 ) implements Serializable {
 
     public static ItemResponse from(Item item) {
@@ -56,7 +60,8 @@ public record ItemResponse(
                 item.getOwner().getDisplayName(),
                 item.getCreatedAt(),
                 item.getUpdatedAt(),
-                distanceKm
+                distanceKm,
+                new ArrayList<>(item.getPhotos().stream().map(PhotoResponse::from).toList())
         );
     }
 }

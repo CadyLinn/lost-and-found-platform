@@ -18,7 +18,8 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 # Don't run as root inside the container.
-RUN groupadd --system app && useradd --system --gid app --no-create-home app
+RUN groupadd --system app && useradd --system --gid app --no-create-home app \
+ && mkdir -p /data/photos && chown app:app /data/photos
 USER app
 
 COPY --from=build /app/app.jar app.jar

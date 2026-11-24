@@ -7,8 +7,17 @@ export function ItemCard({ item }: { item: Item }) {
   return (
     <Link
       to={`/items/${item.id}`}
-      className="group flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-teal-300 hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:border-teal-300 hover:shadow-md"
     >
+      {item.photos[0] && (
+        <img
+          src={item.photos[0].thumbnailUrl}
+          alt=""
+          loading="lazy"
+          className="aspect-[4/3] w-full bg-slate-100 object-cover"
+        />
+      )}
+      <div className="flex flex-1 flex-col p-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="line-clamp-2 font-semibold text-slate-900 group-hover:text-teal-800">{item.title}</h3>
         <TypeBadge type={item.type} />
@@ -31,6 +40,7 @@ export function ItemCard({ item }: { item: Item }) {
           <StatusBadge status={item.status} />
         </div>
       </dl>
+      </div>
     </Link>
   )
 }

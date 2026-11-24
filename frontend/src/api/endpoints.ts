@@ -8,6 +8,7 @@ import type {
   Match,
   NotificationList,
   Page,
+  Photo,
   TokenResponse,
   User,
 } from './types'
@@ -53,6 +54,13 @@ export const api = {
   updateItem: (id: number, input: ItemInput) => request<Item>(`/items/${id}`, { method: 'PUT', body: input }),
   deleteItem: (id: number) => request<void>(`/items/${id}`, { method: 'DELETE' }),
   matches: (id: number) => request<Match[]>(`/items/${id}/matches`),
+  uploadPhoto: (itemId: number, image: Blob) => {
+    const form = new FormData()
+    form.append('file', image, 'photo.jpg')
+    return request<Photo>(`/items/${itemId}/photos`, { method: 'POST', body: form })
+  },
+  deletePhoto: (itemId: number, photoId: number) =>
+    request<void>(`/items/${itemId}/photos/${photoId}`, { method: 'DELETE' }),
 
   submitClaim: (itemId: number, answer: string | null, message: string) =>
     request<Claim>(`/items/${itemId}/claims`, { method: 'POST', body: { answer, message } }),

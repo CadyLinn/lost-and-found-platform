@@ -39,6 +39,12 @@ const MESSAGES: Record<string, string> = {
   'Search text is too long': '搜尋文字太長了（最多 100 個字）',
   'Location search needs lat, lng and radiusKm': '附近搜尋需要位置和範圍',
   'Invalid location: radiusKm must be between 0 and 50': '搜尋範圍要在 50 公里以內',
+  'Only JPEG and PNG images are allowed': '只能上傳 JPEG 或 PNG 圖片',
+  'This file is not a readable image': '無法讀取這張圖片',
+  'Image dimensions are too large': '圖片尺寸太大了',
+  'A post can have at most 5 photos': '每篇貼文最多 5 張照片',
+  'Photos must be 5 MB or smaller': '照片不能超過 5 MB',
+  'Photo not found': '找不到這張照片',
 }
 
 function fallbackMessage(status: number): string {
@@ -46,6 +52,7 @@ function fallbackMessage(status: number): string {
   if (status === 401) return '請先登入'
   if (status === 403) return '你沒有權限這樣做'
   if (status === 404) return '找不到資料'
+  if (status === 413) return '檔案太大了'
   if (status >= 500) return '伺服器發生錯誤，請稍後再試'
   return '發生錯誤，請稍後再試'
 }
@@ -131,13 +138,15 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
 async function send(path: string, { method = 'GET', body }: RequestOptions, session: Session | null) {
   const headers: Record<string, string> = {}
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const isForm = body instanceof FormData
+  // For FormData the browser sets the multipart Content-Type (with its boundary) itself.
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (session) headers['Authorization'] = `Bearer ${session.token}`
   try {
     return await fetch(`/api${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, '連不上伺服器，請確認後端有在執行')

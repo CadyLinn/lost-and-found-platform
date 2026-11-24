@@ -47,4 +47,5 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 	// Tests log in many times from the same address; RateLimitTest turns limiting back on for itself.
 	systemProperty("app.rate-limit.enabled", "false")
+	systemProperty("app.storage.dir", layout.buildDirectory.dir("test-photos").get().asFile.path)
 }

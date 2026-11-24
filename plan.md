@@ -1,7 +1,7 @@
 # Lost & Found Platform — Project Plan
 
 > **Status (2026-11-25):** Phases 0–7 are done. Phase 8 has containers, CI image builds and the README; deploying to a public host is not done yet.
-> Still missing: photo upload and frontend automated tests.
+> Photo upload is done (local disk storage behind a `PhotoStorage` interface). Still missing: frontend automated tests.
 > See [README.md](README.md) for how to run it and [docs/perf.md](docs/perf.md) for load-test results.
 > The sections below are the original plan, updated where the implementation chose differently.
 
@@ -30,7 +30,7 @@ Goals:
 | Auth | Spring Security + JWT (short-lived access token + refresh token), BCrypt password hashing |
 | SQL database | PostgreSQL 16, Spring Data JPA (Hibernate), Flyway migrations |
 | NoSQL store | Redis 7: caching, rate limiting, refresh-token store |
-| File storage | S3-compatible object storage for item photos (not built yet; the MinIO image is no longer published, so a replacement is still to be chosen) |
+| File storage | Photos on local disk / Docker volume behind a `PhotoStorage` interface; an S3-compatible store can be added for cloud hosting (the MinIO image is no longer published) |
 | Frontend language | TypeScript |
 | Frontend framework | React 19 + Vite |
 | Frontend libraries | React Router, TanStack Query, Tailwind CSS, React Hook Form + Zod |

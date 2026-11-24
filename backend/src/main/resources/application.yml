@@ -8,6 +8,10 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   jpa:
     open-in-view: false
     hibernate:
@@ -39,6 +43,9 @@ app:
     refresh-expiration-days: 7
     # The refresh cookie is only sent over HTTPS when true. Keep false for local http://localhost.
     refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+  storage:
+    # Where uploaded photos are kept. In Docker this is a volume (see infra/docker-compose.yml).
+    dir: ${PHOTO_STORAGE_DIR:./data/photos}
   rate-limit:
     enabled: true
     login-per-minute: 10   # per IP address

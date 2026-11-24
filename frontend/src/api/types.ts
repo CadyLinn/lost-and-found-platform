@@ -21,6 +21,14 @@ export interface Category {
   name: string
 }
 
+export interface Photo {
+  id: number
+  /** Up to 1600 px on the longer side. */
+  url: string
+  /** Up to 400 px on the longer side. */
+  thumbnailUrl: string
+}
+
 export interface Item {
   id: number
   type: ItemType
@@ -40,6 +48,7 @@ export interface Item {
   updatedAt: string
   /** Only present when searching near a point. */
   distanceKm: number | null
+  photos: Photo[]
 }
 
 export interface ItemInput {

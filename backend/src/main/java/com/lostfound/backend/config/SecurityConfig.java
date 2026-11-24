@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/error").permitAll()
                 // Actuator lives on the internal management port (8081), not the public one.
                 .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/*", "/api/items/*/matches", "/api/categories").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/*", "/api/items/*/matches", "/api/categories", "/api/photos/*").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));

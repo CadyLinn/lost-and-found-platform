@@ -4,6 +4,7 @@ import { api } from '../api/endpoints'
 import { useAuth } from '../auth/AuthContext'
 import { ClaimSection } from '../components/ClaimSection'
 import { MatchesSection } from '../components/MatchesSection'
+import { PhotoGallery } from '../components/PhotoGallery'
 import { ErrorBox, Spinner, StatusBadge, TypeBadge } from '../components/ui'
 import { categoryLabel, formatDate, STATUS_LABELS } from '../lib/labels'
 import { buttonDanger, buttonSecondary } from '../lib/styles'
@@ -40,6 +41,7 @@ export function ItemDetailPage() {
       </Link>
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+        <PhotoGallery photos={data.photos} title={data.title} />
         <div className="flex flex-wrap items-center gap-2">
           <TypeBadge type={data.type} />
           <StatusBadge status={data.status} />

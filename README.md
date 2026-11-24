@@ -11,6 +11,8 @@ suggestions** between lost and found posts, and returning items through a **veri
   (7 days) in an HttpOnly cookie.
 - **Posts.** Lost/found item posts with category, place, optional GPS coordinates, date and a verification question.
   Only the author can edit or delete a post.
+- **Photos.** Up to 5 per post, shown as a display size and a thumbnail. Photos are stripped of metadata (including the
+  GPS location phones embed) both in the browser and on the server.
 - **Search.**
   - Keyword search over title, description and place. It works for Chinese, which has no spaces between words.
   - Filters for type, category and date range.
@@ -82,6 +84,7 @@ service and a repository, and the API only ever sends DTOs, never JPA entities.
 | `match` | scoring (`MatchScorer`, `TextSimilarity`) and top-K selection (`TopK`) |
 | `claim` | the claim lifecycle, with a row lock so two approvals can't both win |
 | `notification` | in-app notifications |
+| `photo` | uploads, image checks and resizing (`ImageProcessor`), storage (`PhotoStorage`) |
 | `security` | rate limiting and account lockout (Redis counters) |
 | `config` | security, JWT keys, cache setup |
 
@@ -112,6 +115,16 @@ A size-K min-heap keeps the best results in O(n log k).
 - Every write clears the affected entries **after the transaction commits**, so stale data can't be re-cached.
 - If Redis is down, the app falls back to the database instead of failing.
 
+**Photos.**
+- The browser shrinks each photo to 1600 px, applies its rotation and re-draws it on a canvas, which drops all
+  metadata, before uploading.
+- The server doesn't trust that. It checks the file's first bytes (only JPEG and PNG), reads the dimensions *before*
+  decoding (anything over 40 megapixels is rejected as a decompression bomb), and re-encodes a clean JPEG plus a
+  400 px thumbnail.
+- File names are server-generated UUIDs. Files go to disk through the `PhotoStorage` interface: a Docker volume today,
+  and an S3 implementation could replace it for cloud hosting. Deleting a photo or a post removes its files after the
+  database commit.
+
 **Auth.**
 - The refresh token is 32 random bytes in an HttpOnly, `SameSite=Strict` cookie scoped to `/api/auth`.
 - Redis stores only its SHA-256 hash.
@@ -133,16 +146,18 @@ All endpoints are under `/api`. Errors are RFC 7807 problem details (`{"status":
 | GET | `/items/{id}/claims` | ✓ owner | see claims on your post |
 | POST | `/claims/{id}/approve`, `/claims/{id}/reject`, `/items/{id}/returned` | ✓ owner | decide and close |
 | GET / POST | `/notifications`, `/notifications/{id}/read`, `/notifications/read-all` | ✓ | notifications |
+| POST / DELETE | `/items/{id}/photos` (multipart `file`), `/items/{id}/photos/{photoId}` | ✓ owner | add or remove a photo |
+| GET | `/photos/{uuid}.jpg`, `/photos/{uuid}_thumb.jpg` | – | photo files (cached by browsers for a year) |
 
 ## Testing
 
 ```bash
-cd backend && ./gradlew test     # 65 tests: unit + integration (Testcontainers starts real Postgres and Redis)
+cd backend && ./gradlew test     # 80 tests: unit + integration (Testcontainers starts real Postgres and Redis)
 cd frontend && npm run lint && npm run build
 ```
 
-- **Unit tests** cover the matching algorithm: tokenizing, scoring rules, and `TopK` checked against a full sort on
-  10,000 random numbers.
+- **Unit tests** cover the matching algorithm (tokenizing, scoring rules, and `TopK` checked against a full sort on
+  10,000 random numbers) and image processing (resizing, EXIF removal, fake files, decompression bombs).
 - **Integration tests** cover every endpoint with MockMvc against real databases, including:
   - permissions (only owners can edit, only posters can approve)
   - the full claim flow
@@ -182,10 +197,11 @@ Metrics are served on the management port **8081**, which is separate from the p
 | `SPRING_DATA_REDIS_HOST` | `localhost` | |
 | `SERVER_FORWARD_HEADERS_STRATEGY` | – | `native` behind a reverse proxy, so rate limits see the real client IP |
 | `APP_RATELIMIT_ENABLED` | `true` | turn off for load tests that log in a lot |
+| `PHOTO_STORAGE_DIR` | `./data/photos` | where uploaded photos are saved (`/data/photos` volume in Docker) |
 
 ## Not done yet
 
-- Photo upload. It needs an S3-compatible store, and the MinIO image used originally is no longer published.
+- S3 storage for photos. Photos are on a local volume today, which is fine for one server.
 - Frontend automated tests (Vitest, Playwright).
 - Deployment to a public host with HTTPS.
 

@@ -1,9 +1,13 @@
 package com.lostfound.backend.item;
 
+import com.lostfound.backend.photo.ItemPhoto;
 import com.lostfound.backend.user.User;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(name = "items")
@@ -50,6 +54,12 @@ public class Item {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    /** Loaded on demand; for a page of items, Hibernate fetches all their photos in one extra query. */
+    @OneToMany(mappedBy = "item", cascade = CascadeType.REMOVE)
+    @OrderBy("sortOrder ASC")
+    @BatchSize(size = 50)
+    private List<ItemPhoto> photos = new ArrayList<>();
 
     protected Item() {
     }
@@ -121,4 +131,5 @@ public class Item {
     public String getVerificationQuestion() { return verificationQuestion; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public List<ItemPhoto> getPhotos() { return photos; }
 }
