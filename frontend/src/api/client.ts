@@ -50,6 +50,12 @@ function fallbackMessage(status: number): string {
   return '發生錯誤，請稍後再試'
 }
 
+function tooManyRequestsMessage(response: Response): string {
+  const seconds = Number(response.headers.get('Retry-After'))
+  if (!seconds) return '嘗試太多次了，請稍後再試'
+  return seconds < 60 ? `嘗試太多次了，請 ${seconds} 秒後再試` : `嘗試太多次了，請 ${Math.ceil(seconds / 60)} 分鐘後再試`
+}
+
 // ---------- Refreshing the access token ----------
 
 let refreshInFlight: Promise<Session | null> | null = null
@@ -73,11 +79,13 @@ async function doRefresh(): Promise<Session | null> {
   } catch {
     return null // network problem: don't log the user out, just fail this request
   }
-  if (!response.ok) {
+  if (response.status === 401) {
+    // The refresh token is gone or used up: the login is really over.
     clearSession()
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
     return null
   }
+  if (!response.ok) return null // e.g. rate limited or server error: keep the login, just fail this time
   const token = (await response.json()) as TokenResponse
   const session = saveSession(token.accessToken, token.expiresIn)
   window.dispatchEvent(new Event(SESSION_EVENT))
@@ -106,6 +114,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   if (!response.ok) {
+    if (response.status === 429) throw new ApiError(429, tooManyRequestsMessage(response))
     let message = fallbackMessage(response.status)
     try {
       const data = (await response.json()) as { detail?: string }

@@ -1,5 +1,6 @@
 package com.lostfound.backend.auth;
 
+import com.lostfound.backend.security.LoginAttemptService;
 import com.lostfound.backend.user.User;
 import com.lostfound.backend.user.UserRepository;
 import com.lostfound.backend.user.UserResponse;
@@ -16,15 +17,21 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final RefreshTokenService refreshTokenService;
+    private final LoginAttemptService loginAttempts;
+    /** A real BCrypt hash of a random value, compared against when the email doesn't exist. */
+    private final String dummyHash;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        TokenService tokenService,
-                       RefreshTokenService refreshTokenService) {
+                       RefreshTokenService refreshTokenService,
+                       LoginAttemptService loginAttempts) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.refreshTokenService = refreshTokenService;
+        this.loginAttempts = loginAttempts;
+        this.dummyHash = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
     }
 
     @Transactional
@@ -49,12 +56,19 @@ public class AuthService {
     @Transactional(readOnly = true)
     public Session login(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
+        loginAttempts.checkNotLocked(email);
 
-        User user = userRepository.findByEmail(email)
-                .filter(u -> passwordEncoder.matches(request.password(), u.getPasswordHash()))
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+        User user = userRepository.findByEmail(email).orElse(null);
+        // Always run BCrypt, even for unknown emails: otherwise "no such user" answers faster,
+        // and that timing difference would reveal which emails are registered.
+        String hash = user != null ? user.getPasswordHash() : dummyHash;
+        boolean passwordOk = passwordEncoder.matches(request.password(), hash);
 
+        if (user == null || !passwordOk) {
+            loginAttempts.recordFailure(email);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
+        loginAttempts.recordSuccess(email);
         return new Session(tokenService.createToken(user), refreshTokenService.issue(user.getId()));
     }
 
