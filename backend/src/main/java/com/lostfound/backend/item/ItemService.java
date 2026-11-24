@@ -2,6 +2,7 @@ package com.lostfound.backend.item;
 
 import com.lostfound.backend.common.PageResponse;
 import com.lostfound.backend.config.CacheConfig;
+import com.lostfound.backend.match.MatchService;
 import com.lostfound.backend.user.UserRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
@@ -17,15 +18,18 @@ public class ItemService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final ItemCacheEvictor cacheEvictor;
+    private final MatchService matchService;
 
     public ItemService(ItemRepository itemRepository,
                        CategoryRepository categoryRepository,
                        UserRepository userRepository,
-                       ItemCacheEvictor cacheEvictor) {
+                       ItemCacheEvictor cacheEvictor,
+                       MatchService matchService) {
         this.itemRepository = itemRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.cacheEvictor = cacheEvictor;
+        this.matchService = matchService;
     }
 
     @Transactional
@@ -35,7 +39,9 @@ public class ItemService {
         applyRequest(item, request, category);
         Item saved = itemRepository.save(item);
         cacheEvictor.searchResultsChanged();
-        return ItemResponse.from(findItem(saved.getId()));
+        Item loaded = findItem(saved.getId());
+        matchService.notifyStrongMatches(loaded); // tell people whose posts look like this new one
+        return ItemResponse.from(loaded);
     }
 
     @Cacheable(cacheNames = CacheConfig.ITEMS, key = "#id")

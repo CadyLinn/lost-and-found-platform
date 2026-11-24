@@ -5,6 +5,7 @@ import type {
   Item,
   ItemInput,
   ItemType,
+  Match,
   NotificationList,
   Page,
   TokenResponse,
@@ -50,6 +51,7 @@ export const api = {
   createItem: (input: ItemInput) => request<Item>('/items', { method: 'POST', body: input }),
   updateItem: (id: number, input: ItemInput) => request<Item>(`/items/${id}`, { method: 'PUT', body: input }),
   deleteItem: (id: number) => request<void>(`/items/${id}`, { method: 'DELETE' }),
+  matches: (id: number) => request<Match[]>(`/items/${id}/matches`),
 
   submitClaim: (itemId: number, answer: string | null, message: string) =>
     request<Claim>(`/items/${itemId}/claims`, { method: 'POST', body: { answer, message } }),

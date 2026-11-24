@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { api } from '../api/endpoints'
 import { useAuth } from '../auth/AuthContext'
 import { ClaimSection } from '../components/ClaimSection'
+import { MatchesSection } from '../components/MatchesSection'
 import { ErrorBox, Spinner, StatusBadge, TypeBadge } from '../components/ui'
 import { categoryLabel, formatDate, STATUS_LABELS } from '../lib/labels'
 import { buttonDanger, buttonSecondary } from '../lib/styles'
@@ -21,6 +22,7 @@ export function ItemDetailPage() {
       queryClient.removeQueries({ queryKey: ['item', id] })
       queryClient.invalidateQueries({ queryKey: ['items'] })
       queryClient.invalidateQueries({ queryKey: ['my-items'] })
+      queryClient.invalidateQueries({ queryKey: ['matches'] })
       navigate('/me/items')
     },
   })
@@ -93,6 +95,7 @@ export function ItemDetailPage() {
       </div>
 
       <ClaimSection item={data} />
+      <MatchesSection item={data} />
     </article>
   )
 }

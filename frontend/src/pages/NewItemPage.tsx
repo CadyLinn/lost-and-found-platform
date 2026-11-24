@@ -14,6 +14,7 @@ export function NewItemPage() {
       queryClient.setQueryData(['item', item.id], item)
       queryClient.invalidateQueries({ queryKey: ['items'] })
       queryClient.invalidateQueries({ queryKey: ['my-items'] })
+      queryClient.invalidateQueries({ queryKey: ['matches'] })
       navigate(`/items/${item.id}`)
     },
   })

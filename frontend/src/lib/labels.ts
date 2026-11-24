@@ -1,4 +1,4 @@
-import type { ClaimStatus, ItemStatus, ItemType, NotificationType } from '../api/types'
+import type { ClaimStatus, ItemStatus, ItemType, MatchReason, NotificationType } from '../api/types'
 
 // Category names are stored in English in the database; this is how we display them.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -43,6 +43,8 @@ export function notificationText(type: NotificationType, itemTitle: string | nul
       return `你對${title}的認領未被接受`
     case 'ITEM_RETURNED':
       return `${title}已標記為歸還 🎉`
+    case 'MATCH_FOUND':
+      return `新貼文${title}可能和你的貼文是同一件東西，去看看吧`
   }
 }
 
@@ -62,4 +64,11 @@ export function todayIso(): string {
 
 export function formatDistance(km: number): string {
   return km < 1 ? `${Math.round(km * 1000)} 公尺` : `${km.toFixed(1)} 公里`
+}
+
+export const MATCH_REASON_LABELS: Record<MatchReason, string> = {
+  SAME_CATEGORY: '同分類',
+  CLOSE_IN_TIME: '時間接近',
+  NEARBY: '地點很近',
+  SIMILAR_DESCRIPTION: '描述相似',
 }

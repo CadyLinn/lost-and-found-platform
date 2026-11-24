@@ -10,7 +10,7 @@ import { ClaimStatusBadge, ErrorBox, Field } from './ui'
 
 /** After any claim change, refresh everything that shows claim or item status. */
 function refreshAfterClaimChange(queryClient: QueryClient, itemId: number) {
-  for (const key of [['item', itemId], ['item-claims', itemId], ['my-claims'], ['items'], ['my-items'], ['notifications']]) {
+  for (const key of [['item', itemId], ['item-claims', itemId], ['my-claims'], ['items'], ['my-items'], ['notifications'], ['matches']]) {
     queryClient.invalidateQueries({ queryKey: key })
   }
 }

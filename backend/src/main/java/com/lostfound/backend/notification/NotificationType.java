@@ -8,5 +8,7 @@ public enum NotificationType {
     /** To the claimant: the poster declined your claim. */
     CLAIM_REJECTED,
     /** To the approved claimant: the poster marked the item as returned. */
-    ITEM_RETURNED
+    ITEM_RETURNED,
+    /** To a poster: a new post looks like a strong match for yours. The linked item is the new post. */
+    MATCH_FOUND
 }

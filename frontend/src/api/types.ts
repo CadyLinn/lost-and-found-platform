@@ -73,7 +73,7 @@ export interface Claim {
   decidedAt: string | null
 }
 
-export type NotificationType = 'CLAIM_RECEIVED' | 'CLAIM_APPROVED' | 'CLAIM_REJECTED' | 'ITEM_RETURNED'
+export type NotificationType = 'CLAIM_RECEIVED' | 'CLAIM_APPROVED' | 'CLAIM_REJECTED' | 'ITEM_RETURNED' | 'MATCH_FOUND'
 
 export interface Notification {
   id: number
@@ -87,6 +87,16 @@ export interface Notification {
 export interface NotificationList {
   unreadCount: number
   notifications: Notification[]
+}
+
+export type MatchReason = 'SAME_CATEGORY' | 'CLOSE_IN_TIME' | 'NEARBY' | 'SIMILAR_DESCRIPTION'
+
+export interface Match {
+  item: Item
+  /** 0–100 */
+  score: number
+  reasons: MatchReason[]
+  distanceKm: number | null
 }
 
 export interface Page<T> {
