@@ -28,3 +28,6 @@ app:
   jwt:
     secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789abcdef}
     expiration-minutes: 15
+    refresh-expiration-days: 7
+    # The refresh cookie is only sent over HTTPS when true. Keep false for local http://localhost.
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}

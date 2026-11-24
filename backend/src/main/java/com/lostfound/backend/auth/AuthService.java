@@ -15,13 +15,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       TokenService tokenService) {
+                       TokenService tokenService,
+                       RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -39,8 +42,12 @@ public class AuthService {
         return UserResponse.from(saved);
     }
 
+    /** A short-lived access token for the response body, and a long-lived refresh token for the cookie. */
+    public record Session(TokenResponse accessToken, String refreshToken) {
+    }
+
     @Transactional(readOnly = true)
-    public TokenResponse login(LoginRequest request) {
+    public Session login(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
 
         User user = userRepository.findByEmail(email)
@@ -48,6 +55,21 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
-        return tokenService.createToken(user);
+        return new Session(tokenService.createToken(user), refreshTokenService.issue(user.getId()));
+    }
+
+    /** Swaps a refresh token for a new access token and a new refresh token. The old one stops working. */
+    @Transactional(readOnly = true)
+    public Session refresh(String refreshToken) {
+        User user = refreshTokenService.consume(refreshToken)
+                .flatMap(userRepository::findById)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Session expired, please log in again"));
+
+        return new Session(tokenService.createToken(user), refreshTokenService.issue(user.getId()));
+    }
+
+    public void logout(String refreshToken) {
+        refreshTokenService.revoke(refreshToken);
     }
 }

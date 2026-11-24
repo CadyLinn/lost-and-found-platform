@@ -36,7 +36,7 @@ function NotificationBell() {
 }
 
 export function Layout() {
-  const { isLoggedIn, user, logout } = useAuth()
+  const { isLoggedIn, isRestoring, user, logout } = useAuth()
   const navigate = useNavigate()
 
   return (
@@ -65,7 +65,7 @@ export function Layout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            {isLoggedIn ? (
+            {isRestoring ? null : isLoggedIn ? (
               <>
                 <NotificationBell />
                 <Link to="/items/new" className={buttonPrimary}>

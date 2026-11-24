@@ -1,4 +1,13 @@
-import { clearSession, loadSession, UNAUTHORIZED_EVENT } from '../auth/session'
+import {
+  canRefresh,
+  clearSession,
+  loadSession,
+  saveSession,
+  SESSION_EVENT,
+  UNAUTHORIZED_EVENT,
+  type Session,
+} from '../auth/session'
+import type { TokenResponse } from './types'
 
 /** An HTTP error from the backend, with a message that is safe to show to the user. */
 export class ApiError extends Error {
@@ -14,6 +23,7 @@ export class ApiError extends Error {
 const MESSAGES: Record<string, string> = {
   'Email is already registered': '這個 Email 已經註冊過了',
   'Invalid email or password': 'Email 或密碼錯誤',
+  'Session expired, please log in again': '登入已過期，請重新登入',
   'Item not found': '找不到這篇貼文',
   'You can only change your own items': '你只能修改自己的貼文',
   'Unknown category': '分類不存在',
@@ -40,34 +50,62 @@ function fallbackMessage(status: number): string {
   return '發生錯誤，請稍後再試'
 }
 
+// ---------- Refreshing the access token ----------
+
+let refreshInFlight: Promise<Session | null> | null = null
+
+/**
+ * Trades the refresh cookie for a new access token. If several requests need this at the same
+ * time they share one call, because each refresh token works only once.
+ * Returns null when the user is no longer logged in.
+ */
+export function refreshSession(): Promise<Session | null> {
+  refreshInFlight ??= doRefresh().finally(() => {
+    refreshInFlight = null
+  })
+  return refreshInFlight
+}
+
+async function doRefresh(): Promise<Session | null> {
+  let response: Response
+  try {
+    response = await fetch('/api/auth/refresh', { method: 'POST' })
+  } catch {
+    return null // network problem: don't log the user out, just fail this request
+  }
+  if (!response.ok) {
+    clearSession()
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    return null
+  }
+  const token = (await response.json()) as TokenResponse
+  const session = saveSession(token.accessToken, token.expiresIn)
+  window.dispatchEvent(new Event(SESSION_EVENT))
+  return session
+}
+
+// ---------- Requests ----------
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
 }
 
-export async function request<T>(path: string, { method = 'GET', body }: RequestOptions = {}): Promise<T> {
-  const session = loadSession()
-  const headers: Record<string, string> = {}
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
-  if (session) headers['Authorization'] = `Bearer ${session.token}`
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const isAuthCall = path.startsWith('/auth/')
+  let session = loadSession()
+  // Access token expired while the page was open (or closed): get a new one first.
+  if (!session && !isAuthCall && canRefresh()) session = await refreshSession()
 
-  let response: Response
-  try {
-    response = await fetch(`/api${path}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  } catch {
-    throw new ApiError(0, '連不上伺服器，請確認後端有在執行')
+  let response = await send(path, options, session)
+
+  // The server rejected the token anyway (e.g. it expired in flight): refresh once and retry.
+  if (response.status === 401 && session && !isAuthCall) {
+    const renewed = await refreshSession()
+    if (renewed) response = await send(path, options, renewed)
   }
 
   if (!response.ok) {
-    // A rejected token means the session is over: tell the app to log out.
-    if (response.status === 401 && session) {
-      clearSession()
-      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
-    }
     let message = fallbackMessage(response.status)
     try {
       const data = (await response.json()) as { detail?: string }
@@ -80,4 +118,19 @@ export async function request<T>(path: string, { method = 'GET', body }: Request
 
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
+}
+
+async function send(path: string, { method = 'GET', body }: RequestOptions, session: Session | null) {
+  const headers: Record<string, string> = {}
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (session) headers['Authorization'] = `Bearer ${session.token}`
+  try {
+    return await fetch(`/api${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, '連不上伺服器，請確認後端有在執行')
+  }
 }

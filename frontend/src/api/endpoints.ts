@@ -41,6 +41,7 @@ export const api = {
     request<User>('/auth/register', { method: 'POST', body: { email, password, displayName } }),
   login: (email: string, password: string) =>
     request<TokenResponse>('/auth/login', { method: 'POST', body: { email, password } }),
+  logout: () => request<void>('/auth/logout', { method: 'POST' }),
   me: () => request<User>('/me'),
 
   categories: () => request<Category[]>('/categories'),
