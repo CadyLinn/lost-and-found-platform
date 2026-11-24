@@ -1,3 +1,11 @@
+# Local infrastructure, plus optional profiles:
+#
+#   docker compose up -d                          Postgres + Redis only (for ./gradlew bootRun + npm run dev)
+#   docker compose --profile app up -d --build    the whole site in containers → http://localhost:8000
+#   docker compose --profile monitoring up -d     Prometheus + Grafana → http://localhost:3000
+#
+# Settings come from infra/.env (copy .env.example to .env first).
+
 services:
   postgres:
     image: postgres:16
@@ -10,13 +18,55 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7
     ports:
       - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
-  # ---- Monitoring (optional): docker compose --profile monitoring up -d ----
+  # ---- The application (profile: app) ----
+
+  backend:
+    build: ../backend
+    image: lost-and-found-backend:local
+    profiles: [app]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      # Required. The backend refuses to start without a secret of 32+ characters.
+      JWT_SECRET: ${JWT_SECRET:-}
+      # Set to true once the site is served over HTTPS.
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
+      # nginx sits in front: trust its X-Forwarded-For so rate limits see the real client IP.
+      SERVER_FORWARD_HEADERS_STRATEGY: native
+    # No ports published: only nginx (and Prometheus on 8081) can reach the backend.
+    restart: unless-stopped
+
+  frontend:
+    build: ../frontend
+    image: lost-and-found-frontend:local
+    profiles: [app]
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:8000:80"
+    restart: unless-stopped
+
+  # ---- Monitoring (profile: monitoring) ----
 
   prometheus:
     image: prom/prometheus:v2.55.1

@@ -1,5 +1,10 @@
 # Lost & Found Platform — Project Plan
 
+> **Status (2026-11-25):** Phases 0–7 are done. Phase 8 has containers, CI image builds and the README; deploying to a public host is not done yet.
+> Still missing: photo upload and frontend automated tests.
+> See [README.md](README.md) for how to run it and [docs/perf.md](docs/perf.md) for load-test results.
+> The sections below are the original plan, updated where the implementation chose differently.
+
 ## 1. Overview
 
 A full-stack web app where people post **lost** or **found** items, search listings, receive automatic **match suggestions**, and complete a **verified claim flow** until an item is returned to its owner.
@@ -18,16 +23,16 @@ Goals:
 
 | Layer | Choice |
 |---|---|
-| Backend language | Java 21 |
-| Backend framework | Spring Boot 3.x (Web, Validation, Security, Data JPA, Data Redis, Actuator) |
+| Backend language | Java 25 |
+| Backend framework | Spring Boot 4.x (Web, Validation, Security, Data JPA, Data Redis, Actuator) |
 | Build tool | Gradle (Kotlin DSL) |
 | API | REST + JSON, OpenAPI / Swagger UI via `springdoc-openapi` |
 | Auth | Spring Security + JWT (short-lived access token + refresh token), BCrypt password hashing |
 | SQL database | PostgreSQL 16, Spring Data JPA (Hibernate), Flyway migrations |
 | NoSQL store | Redis 7: caching, rate limiting, refresh-token store |
-| File storage | S3-compatible object storage (MinIO locally) for item photos |
+| File storage | S3-compatible object storage for item photos (not built yet; the MinIO image is no longer published, so a replacement is still to be chosen) |
 | Frontend language | TypeScript |
-| Frontend framework | React 18 + Vite |
+| Frontend framework | React 19 + Vite |
 | Frontend libraries | React Router, TanStack Query, Tailwind CSS, React Hook Form + Zod |
 | Backend testing | JUnit 5, Mockito, Spring Boot Test, MockMvc, Testcontainers |
 | Frontend testing | Vitest, React Testing Library, Playwright (E2E) |
@@ -92,7 +97,7 @@ The backend is organized **package-by-feature**. Each feature uses `Controller �
    - Title, description, category, location (text + lat/lng), date lost/found, photos
    - Status lifecycle: `OPEN → CLAIMED → RETURNED`, or `CLOSED`
 3. **Search & filter**
-   - Keyword (PostgreSQL full-text search)
+   - Keyword (`ILIKE` with pg_trgm trigram indexes; Postgres full-text search can't split Chinese words)
    - Filter by type, category, date range, and distance from a point
    - Pagination and sorting (newest, closest)
 4. **Automatic matching**
@@ -101,7 +106,7 @@ The backend is organized **package-by-feature**. Each feature uses `Controller �
      - category match
      - time proximity
      - geographic distance (Haversine)
-     - text similarity (token overlap / TF-IDF cosine)
+     - text similarity (cosine over word counts; Chinese split into two-character bigrams)
    - Return the top-K candidates using a min-heap (priority queue)
 5. **Claim flow**
    - The finder sets a private verification question (e.g. "What sticker is on the back?")
@@ -122,13 +127,13 @@ The backend is organized **package-by-feature**. Each feature uses `Controller �
 |---|---|
 | `users` | id, email (unique), password_hash, display_name, role, created_at |
 | `categories` | id, name |
-| `items` | id, owner_id → users, type, title, description, category_id, location_text, lat, lng, event_date, status, verification_question, created_at, search_vector (tsvector) |
+| `items` | id, owner_id → users, type, title, description, category_id, location_text, lat, lng, event_date, status, verification_question, created_at, updated_at |
 | `item_photos` | id, item_id → items, object_key, sort_order |
 | `claims` | id, item_id → items, claimant_id → users, answer, message, status, created_at, decided_at |
 | `notifications` | id, user_id → users, type, payload (jsonb), read_at, created_at |
 | `reports` | id, item_id → items, reporter_id → users, reason, status |
 
-Indexes: GIN on `search_vector`; B-tree on `(type, status, category_id)`, `event_date`, and `(lat, lng)`.
+Indexes: trigram GIN on `title`, `description`, `location_text`; B-tree on `(type, status, category_id)`, `event_date`, and `(lat, lng)`.
 
 ### Redis (NoSQL)
 
@@ -211,7 +216,7 @@ Targets:
 
 | Phase | Scope | Done when |
 |---|---|---|
-| 0 | Scaffold backend + frontend, docker-compose (Postgres, Redis, MinIO), CI skeleton | `docker compose up` runs and CI is green |
+| 0 | Scaffold backend + frontend, docker-compose (Postgres, Redis), CI skeleton | `docker compose up` runs and CI is green |
 | 1 | Auth + users | Register/login works; security tests pass |
 | 2 | Item CRUD + photo upload | Items can be created, edited and viewed with photos |
 | 3 | Search & filter + Redis cache | Filtered search works; cache integration tests pass |
