@@ -1,5 +1,6 @@
 package com.lostfound.backend.security;
 
+import com.lostfound.backend.common.AppMetrics;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,13 +33,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private final RedisCounter counter;
+    private final AppMetrics metrics;
     private final boolean enabled;
     private final Map<String, Limit> limits;
 
     public RateLimitFilter(RedisCounter counter,
+                           AppMetrics metrics,
                            @Value("${app.rate-limit.enabled}") boolean enabled,
                            @Value("${app.rate-limit.login-per-minute}") int loginPerMinute) {
         this.counter = counter;
+        this.metrics = metrics;
         this.enabled = enabled;
         this.limits = Map.of(
                 "/api/auth/login", new Limit(loginPerMinute, Duration.ofMinutes(1)),
@@ -60,6 +64,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (counter.increment(key, limit.window()) > limit.maxRequests()) {
             long retryAfter = counter.secondsLeft(key);
+            metrics.rateLimited("ip_limit", path);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfter));
             response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);

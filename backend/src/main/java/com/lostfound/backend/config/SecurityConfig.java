@@ -19,7 +19,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/actuator/health/**", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/error").permitAll()
+                // Actuator lives on the internal management port (8081), not the public one.
+                .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/*", "/api/items/*/matches", "/api/categories").permitAll()
                 .anyRequest().authenticated()
             )

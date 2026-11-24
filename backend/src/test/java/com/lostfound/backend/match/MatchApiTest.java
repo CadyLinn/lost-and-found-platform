@@ -84,6 +84,19 @@ class MatchApiTest {
     }
 
     @Test
+    void cachedMatchesIncludeNewPosts() throws Exception {
+        String loser = newUser();
+        long lost = postItem(loser, "LOST", 4, "藍色後背包", 25.0173, "2025-09-10");
+        mockMvc.perform(get("/api/items/" + lost + "/matches")).andExpect(jsonPath("$.length()").value(0)); // now cached
+
+        long found = postItem(newUser(), "FOUND", 4, "撿到藍色後背包", 25.0174, "2025-09-11");
+
+        mockMvc.perform(get("/api/items/" + lost + "/matches"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].item.id").value(found));
+    }
+
+    @Test
     void unknownItemIs404() throws Exception {
         mockMvc.perform(get("/api/items/999999/matches")).andExpect(status().isNotFound());
     }

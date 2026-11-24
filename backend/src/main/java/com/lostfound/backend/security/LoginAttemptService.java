@@ -1,5 +1,6 @@
 package com.lostfound.backend.security;
 
+import com.lostfound.backend.common.AppMetrics;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,13 +15,16 @@ public class LoginAttemptService {
     static final Duration WINDOW = Duration.ofMinutes(15);
 
     private final RedisCounter counter;
+    private final AppMetrics metrics;
     private final boolean enabled;
     private final int maxFailures;
 
     public LoginAttemptService(RedisCounter counter,
+                               AppMetrics metrics,
                                @Value("${app.rate-limit.enabled}") boolean enabled,
                                @Value("${app.rate-limit.max-failed-logins}") int maxFailures) {
         this.counter = counter;
+        this.metrics = metrics;
         this.enabled = enabled;
         this.maxFailures = maxFailures;
     }
@@ -28,6 +32,7 @@ public class LoginAttemptService {
     /** Call before checking the password. Throws 429 if this account is currently locked. */
     public void checkNotLocked(String email) {
         if (enabled && counter.current(key(email)) >= maxFailures) {
+            metrics.rateLimited("account_locked", "/api/auth/login");
             throw new TooManyRequestsException("Too many failed logins, please try again later",
                     counter.secondsLeft(key(email)));
         }

@@ -1,5 +1,7 @@
 package com.lostfound.backend.match;
 
+import com.lostfound.backend.common.AppMetrics;
+import com.lostfound.backend.config.CacheConfig;
 import com.lostfound.backend.item.Item;
 import com.lostfound.backend.item.ItemRepository;
 import com.lostfound.backend.item.ItemResponse;
@@ -10,6 +12,7 @@ import com.lostfound.backend.notification.NotificationType;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -42,12 +45,16 @@ public class MatchService {
 
     private final ItemRepository itemRepository;
     private final NotificationService notificationService;
+    private final AppMetrics metrics;
 
-    public MatchService(ItemRepository itemRepository, NotificationService notificationService) {
+    public MatchService(ItemRepository itemRepository, NotificationService notificationService, AppMetrics metrics) {
         this.itemRepository = itemRepository;
         this.notificationService = notificationService;
+        this.metrics = metrics;
     }
 
+    /** Cached for a minute: scoring hundreds of candidates is the most expensive read in the app. */
+    @Cacheable(cacheNames = CacheConfig.ITEM_MATCHES, key = "#itemId + ':' + #limit")
     @Transactional(readOnly = true)
     public List<MatchResponse> matchesFor(Long itemId, int limit) {
         Item item = itemRepository.findWithDetailsById(itemId)
@@ -61,7 +68,7 @@ public class MatchService {
                         (int) Math.round(s.result().score() * 100),
                         s.result().reasons(),
                         s.result().distanceKm()))
-                .toList();
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)); // serializable
     }
 
     /** Called right after a post is created, inside the same transaction. */
@@ -69,6 +76,7 @@ public class MatchService {
         for (Scored match : findBest(newItem, 5)) {
             if (match.result().score() >= NOTIFY_SCORE) {
                 notificationService.notify(match.item().getOwner(), NotificationType.MATCH_FOUND, newItem);
+                metrics.matchNotificationSent();
             }
         }
     }

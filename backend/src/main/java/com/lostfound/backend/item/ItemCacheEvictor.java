@@ -22,9 +22,11 @@ public class ItemCacheEvictor {
         searchResultsChanged();
     }
 
-    /** Any change that can affect which items a search returns. */
+    /** Any change that can affect which items a search returns, or which posts match each other. */
     public void searchResultsChanged() {
-        Cache search = cacheManager.getCache(CacheConfig.ITEM_SEARCH);
-        if (search != null) search.clear();
+        for (String name : new String[] {CacheConfig.ITEM_SEARCH, CacheConfig.ITEM_MATCHES}) {
+            Cache cache = cacheManager.getCache(name);
+            if (cache != null) cache.clear();
+        }
     }
 }

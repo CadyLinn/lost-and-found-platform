@@ -20,10 +20,18 @@ spring:
         enabled: false
 
 management:
+  # Actuator (health + metrics) runs on its own port, so it is never reachable through the public port 8080.
+  server:
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+  metrics:
+    distribution:
+      # Lets Prometheus/Grafana compute p50/p95/p99 latency per endpoint.
+      percentiles-histogram:
+        http.server.requests: true
 app:
   jwt:
     secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789abcdef}

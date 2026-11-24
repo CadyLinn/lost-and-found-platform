@@ -15,6 +15,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
  * <ul>
  *   <li>{@code items}: one item's details, kept 10 minutes.</li>
  *   <li>{@code item-search}: a page of search results, kept 1 minute.</li>
+ *   <li>{@code item-matches}: suggested matches for one post, kept 1 minute.</li>
  * </ul>
  * Both are cleared whenever an item changes (see {@code ItemCacheEvictor}).
  */
@@ -24,6 +25,7 @@ public class CacheConfig implements CachingConfigurer {
 
     public static final String ITEMS = "items";
     public static final String ITEM_SEARCH = "item-search";
+    public static final String ITEM_MATCHES = "item-matches";
 
     @Bean
     RedisCacheManagerBuilderCustomizer itemCaches() {
@@ -35,8 +37,11 @@ public class CacheConfig implements CachingConfigurer {
                 .cacheDefaults(defaults)
                 .withCacheConfiguration(ITEMS, defaults.entryTtl(Duration.ofMinutes(10)))
                 .withCacheConfiguration(ITEM_SEARCH, defaults.entryTtl(Duration.ofMinutes(1)))
+                .withCacheConfiguration(ITEM_MATCHES, defaults.entryTtl(Duration.ofMinutes(1)))
                 // Evictions wait until the database transaction commits, so nobody re-caches stale data.
-                .transactionAware();
+                .transactionAware()
+                // Count hits and misses, so the cache hit ratio shows up in the metrics.
+                .enableStatistics();
     }
 
     /** If Redis is down or an entry can't be read, log it and fall back to the database instead of failing. */

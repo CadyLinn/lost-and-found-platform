@@ -1,5 +1,6 @@
 package com.lostfound.backend.item;
 
+import com.lostfound.backend.common.AppMetrics;
 import com.lostfound.backend.common.PageResponse;
 import com.lostfound.backend.config.CacheConfig;
 import com.lostfound.backend.match.MatchService;
@@ -19,17 +20,20 @@ public class ItemService {
     private final UserRepository userRepository;
     private final ItemCacheEvictor cacheEvictor;
     private final MatchService matchService;
+    private final AppMetrics metrics;
 
     public ItemService(ItemRepository itemRepository,
                        CategoryRepository categoryRepository,
                        UserRepository userRepository,
                        ItemCacheEvictor cacheEvictor,
-                       MatchService matchService) {
+                       MatchService matchService,
+                       AppMetrics metrics) {
         this.itemRepository = itemRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.cacheEvictor = cacheEvictor;
         this.matchService = matchService;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -38,6 +42,7 @@ public class ItemService {
         Item item = new Item(userRepository.getReferenceById(userId), request.type(), category);
         applyRequest(item, request, category);
         Item saved = itemRepository.save(item);
+        metrics.itemCreated(request.type().name());
         cacheEvictor.searchResultsChanged();
         Item loaded = findItem(saved.getId());
         matchService.notifyStrongMatches(loaded); // tell people whose posts look like this new one

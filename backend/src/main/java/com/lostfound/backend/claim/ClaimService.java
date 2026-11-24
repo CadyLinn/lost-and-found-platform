@@ -1,5 +1,6 @@
 package com.lostfound.backend.claim;
 
+import com.lostfound.backend.common.AppMetrics;
 import com.lostfound.backend.item.Item;
 import com.lostfound.backend.item.ItemCacheEvictor;
 import com.lostfound.backend.item.ItemRepository;
@@ -31,17 +32,20 @@ public class ClaimService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final ItemCacheEvictor cacheEvictor;
+    private final AppMetrics metrics;
 
     public ClaimService(ClaimRepository claimRepository,
                         ItemRepository itemRepository,
                         UserRepository userRepository,
                         NotificationService notificationService,
-                        ItemCacheEvictor cacheEvictor) {
+                        ItemCacheEvictor cacheEvictor,
+                        AppMetrics metrics) {
         this.claimRepository = claimRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.cacheEvictor = cacheEvictor;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -71,6 +75,7 @@ public class ClaimService {
             throw conflict("You have already responded to this item");
         }
         notificationService.notify(item.getOwner(), NotificationType.CLAIM_RECEIVED, item);
+        metrics.claimEvent("submitted");
         return ClaimResponse.forClaimant(claimRepository.findWithDetailsById(claim.getId()).orElseThrow());
     }
 
@@ -105,6 +110,7 @@ public class ClaimService {
         claim.approve();
         item.markClaimed();
         cacheEvictor.itemChanged(item.getId());
+        metrics.claimEvent("approved");
         notificationService.notify(claim.getClaimant(), NotificationType.CLAIM_APPROVED, item);
 
         // Only one person can get the item back, so everyone else still waiting is declined.
@@ -123,6 +129,7 @@ public class ClaimService {
         requirePending(claim);
 
         claim.reject();
+        metrics.claimEvent("rejected");
         notificationService.notify(claim.getClaimant(), NotificationType.CLAIM_REJECTED, item);
         return ClaimResponse.forPoster(claim);
     }
@@ -137,6 +144,7 @@ public class ClaimService {
 
         item.markReturned();
         cacheEvictor.itemChanged(itemId);
+        metrics.claimEvent("returned");
         for (Claim approved : claimRepository.findByItemIdAndStatus(itemId, ClaimStatus.APPROVED)) {
             notificationService.notify(approved.getClaimant(), NotificationType.ITEM_RETURNED, item);
         }
