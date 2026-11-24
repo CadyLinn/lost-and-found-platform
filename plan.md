@@ -1,7 +1,7 @@
 # Lost & Found Platform — Project Plan
 
 > **Status (2026-11-25):** Phases 0–7 are done. Phase 8 has containers, CI image builds and the README; deploying to a public host is not done yet.
-> Photo upload is done (local disk storage behind a `PhotoStorage` interface). Still missing: frontend automated tests.
+> Photo upload is done (local disk storage behind a `PhotoStorage` interface). Frontend tests are done (Vitest + Playwright E2E in CI).
 > See [README.md](README.md) for how to run it and [docs/perf.md](docs/perf.md) for load-test results.
 > The sections below are the original plan, updated where the implementation chose differently.
 

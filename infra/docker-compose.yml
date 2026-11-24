@@ -55,6 +55,8 @@ services:
       # nginx sits in front: trust its X-Forwarded-For so rate limits see the real client IP.
       SERVER_FORWARD_HEADERS_STRATEGY: native
       PHOTO_STORAGE_DIR: /data/photos
+      # Only turned off for automated end-to-end tests, which create many accounts quickly.
+      APP_RATELIMIT_ENABLED: ${APP_RATELIMIT_ENABLED:-true}
     volumes:
       - photos:/data/photos   # uploaded photos survive container rebuilds
     # No ports published: only nginx (and Prometheus on 8081) can reach the backend.

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { cloneElement, useId, type ReactElement } from 'react'
 import type { ClaimStatus, ItemStatus, ItemType } from '../api/types'
 import { CLAIM_STATUS_LABELS, STATUS_LABELS, TYPE_LABELS } from '../lib/labels'
 
@@ -33,17 +33,32 @@ export function StatusBadge({ status }: { status: ItemStatus }) {
   )
 }
 
-export function Field({ label, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactNode }) {
+/**
+ * A labelled form field. The label holds only the field's name; the hint or error is linked with
+ * aria-describedby, so screen readers say "Title, edit text … Please enter a title" instead of
+ * reading everything as one long name. The child must be a single input, select or textarea.
+ */
+export function Field({ label, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactElement }) {
+  const id = useId()
+  const noteId = `${id}-note`
+  const note = error ?? hint
+  const control = cloneElement(children as ReactElement<Record<string, unknown>>, {
+    id,
+    'aria-describedby': note ? noteId : undefined,
+    'aria-invalid': error ? true : undefined,
+  })
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
-      {children}
-      {error ? (
-        <span className="mt-1 block text-sm text-red-600">{error}</span>
-      ) : hint ? (
-        <span className="mt-1 block text-xs text-slate-500">{hint}</span>
-      ) : null}
-    </label>
+    <div>
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-slate-700">
+        {label}
+      </label>
+      {control}
+      {note && (
+        <span id={noteId} className={`mt-1 block ${error ? 'text-sm text-red-600' : 'text-xs text-slate-500'}`}>
+          {note}
+        </span>
+      )}
+    </div>
   )
 }
 

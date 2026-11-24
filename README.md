@@ -152,8 +152,12 @@ All endpoints are under `/api`. Errors are RFC 7807 problem details (`{"status":
 ## Testing
 
 ```bash
-cd backend && ./gradlew test     # 80 tests: unit + integration (Testcontainers starts real Postgres and Redis)
-cd frontend && npm run lint && npm run build
+cd backend && ./gradlew test     # 81 tests: unit + integration (Testcontainers starts real Postgres and Redis)
+cd frontend && npm test          # 27 unit and component tests (Vitest + Testing Library)
+
+# End-to-end: a real browser clicks through the running site (Playwright)
+cd infra && APP_RATELIMIT_ENABLED=false docker compose --profile app up -d --build
+cd frontend && npm run test:e2e
 ```
 
 - **Unit tests** cover the matching algorithm (tokenizing, scoring rules, and `TopK` checked against a full sort on
@@ -164,6 +168,14 @@ cd frontend && npm run lint && npm run build
   - cache invalidation
   - refresh-token rotation and reuse
   - rate limiting and account lockout
+- **Frontend tests** cover:
+  - the API client: refreshing on 401, sharing one refresh between parallel requests, logging out only when the
+    refresh token is really rejected, translated error messages
+  - form validation, the login redirect, and what the claim section shows to visitors and posters
+- **End-to-end tests** (Playwright, real Chrome) run the whole story: register → post a found item with a photo →
+  another user finds it by search and claims it → the finder is notified, accepts, sees the contact email and
+  marks it returned. This test caught a real bug: posts dated "today" were rejected between midnight and 8 a.m. in
+  Taiwan, because the server compared dates in UTC.
 - **Load tests** use k6 (`load-tests/browse.js`). The latest numbers are in **[docs/perf.md](docs/perf.md)**:
   - about 4,300 requests/s on a laptop
   - p95 latency of 9 ms under stress
@@ -171,8 +183,9 @@ cd frontend && npm run lint && npm run build
 
 CI (GitHub Actions) runs on every push and pull request:
 1. Backend tests.
-2. Frontend lint and build.
-3. Build both Docker images. On `main` they're also pushed to `ghcr.io`.
+2. Frontend lint, tests and build.
+3. End-to-end tests against the whole site running in Docker.
+4. Build both Docker images. On `main` they're also pushed to `ghcr.io`.
 
 ## Monitoring
 
@@ -202,7 +215,6 @@ Metrics are served on the management port **8081**, which is separate from the p
 ## Not done yet
 
 - S3 storage for photos. Photos are on a local volume today, which is fine for one server.
-- Frontend automated tests (Vitest, Playwright).
 - Deployment to a public host with HTTPS.
 
 ## Project structure

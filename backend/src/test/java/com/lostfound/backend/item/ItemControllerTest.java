@@ -91,6 +91,19 @@ class ItemControllerTest {
     }
 
     @Test
+    void todayCountsAsTodayInEveryTimezone() throws Exception {
+        // When it's already "tomorrow" in Asia but still "today" in UTC, a post dated with the
+        // user's local today must be accepted (this used to fail between midnight and 8 a.m. in Taiwan).
+        String token = AuthTestHelper.registerAndLogin(mockMvc, "item-tz@test.com");
+        java.time.LocalDate earliestToday = java.time.LocalDate.now(java.time.ZoneOffset.ofHours(14));
+
+        createItem(token, PHONE_ITEM.replace("2026-11-20", earliestToday.toString()))
+                .andExpect(status().isCreated());
+        createItem(token, PHONE_ITEM.replace("2026-11-20", earliestToday.plusDays(1).toString()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void createWithUnknownCategoryReturns400() throws Exception {
         String token = AuthTestHelper.registerAndLogin(mockMvc, "item-badcat@test.com");
 
