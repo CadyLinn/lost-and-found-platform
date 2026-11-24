@@ -1,5 +1,15 @@
 import { request } from './client'
-import type { Category, Item, ItemInput, ItemType, Page, TokenResponse, User } from './types'
+import type {
+  Category,
+  Claim,
+  Item,
+  ItemInput,
+  ItemType,
+  NotificationList,
+  Page,
+  TokenResponse,
+  User,
+} from './types'
 
 export interface ItemFilters {
   type?: ItemType
@@ -31,4 +41,16 @@ export const api = {
   createItem: (input: ItemInput) => request<Item>('/items', { method: 'POST', body: input }),
   updateItem: (id: number, input: ItemInput) => request<Item>(`/items/${id}`, { method: 'PUT', body: input }),
   deleteItem: (id: number) => request<void>(`/items/${id}`, { method: 'DELETE' }),
+
+  submitClaim: (itemId: number, answer: string | null, message: string) =>
+    request<Claim>(`/items/${itemId}/claims`, { method: 'POST', body: { answer, message } }),
+  itemClaims: (itemId: number) => request<Claim[]>(`/items/${itemId}/claims`),
+  myClaims: () => request<Claim[]>('/me/claims'),
+  approveClaim: (claimId: number) => request<Claim>(`/claims/${claimId}/approve`, { method: 'POST' }),
+  rejectClaim: (claimId: number) => request<Claim>(`/claims/${claimId}/reject`, { method: 'POST' }),
+  markReturned: (itemId: number) => request<Item>(`/items/${itemId}/returned`, { method: 'POST' }),
+
+  notifications: () => request<NotificationList>('/notifications'),
+  markNotificationRead: (id: number) => request<void>(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () => request<void>('/notifications/read-all', { method: 'POST' }),
 }

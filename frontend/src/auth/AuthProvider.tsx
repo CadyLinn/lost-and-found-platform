@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     queryClient.removeQueries({ queryKey: ['me'] })
     queryClient.removeQueries({ queryKey: ['my-items'] })
+    queryClient.removeQueries({ queryKey: ['my-claims'] })
+    queryClient.removeQueries({ queryKey: ['item-claims'] })
+    queryClient.removeQueries({ queryKey: ['notifications'] })
   }, [queryClient])
 
   const value = useMemo<AuthState>(

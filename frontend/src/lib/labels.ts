@@ -1,4 +1,4 @@
-import type { ItemStatus, ItemType } from '../api/types'
+import type { ClaimStatus, ItemStatus, ItemType, NotificationType } from '../api/types'
 
 // Category names are stored in English in the database; this is how we display them.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -24,6 +24,30 @@ export const STATUS_LABELS: Record<ItemStatus, string> = {
   CLAIMED: '已被認領',
   RETURNED: '已歸還',
   CLOSED: '已關閉',
+}
+
+export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
+  PENDING: '等待回覆',
+  APPROVED: '已接受',
+  REJECTED: '未被接受',
+}
+
+export function notificationText(type: NotificationType, itemTitle: string | null): string {
+  const title = itemTitle ? `「${itemTitle}」` : '一篇已刪除的貼文'
+  switch (type) {
+    case 'CLAIM_RECEIVED':
+      return `有人回應了你的貼文${title}`
+    case 'CLAIM_APPROVED':
+      return `你對${title}的認領已被接受，可以聯絡對方了`
+    case 'CLAIM_REJECTED':
+      return `你對${title}的認領未被接受`
+    case 'ITEM_RETURNED':
+      return `${title}已標記為歸還 🎉`
+  }
+}
+
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('zh-TW', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 export function formatDate(isoDate: string): string {

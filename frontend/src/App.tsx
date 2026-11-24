@@ -9,7 +9,9 @@ import { LoginPage, RegisterPage } from './pages/AuthPages'
 import { EditItemPage } from './pages/EditItemPage'
 import { ItemDetailPage } from './pages/ItemDetailPage'
 import { ItemsPage } from './pages/ItemsPage'
+import { MyClaimsPage } from './pages/MyClaimsPage'
 import { MyItemsPage } from './pages/MyItemsPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { NewItemPage } from './pages/NewItemPage'
 
 const queryClient = new QueryClient({
@@ -32,6 +34,8 @@ const router = createBrowserRouter([
       { path: '/items/new', element: <RequireAuth><NewItemPage /></RequireAuth> },
       { path: '/items/:id/edit', element: <RequireAuth><EditItemPage /></RequireAuth> },
       { path: '/me/items', element: <RequireAuth><MyItemsPage /></RequireAuth> },
+      { path: '/me/claims', element: <RequireAuth><MyClaimsPage /></RequireAuth> },
+      { path: '/notifications', element: <RequireAuth><NotificationsPage /></RequireAuth> },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '*', element: <NotFound /> },

@@ -87,6 +87,22 @@ public class Item {
         this.verificationQuestion = verificationQuestion;
     }
 
+    /** OPEN → CLAIMED, when the poster accepts a claim. */
+    public void markClaimed() {
+        if (status != ItemStatus.OPEN) {
+            throw new IllegalStateException("Only an open item can be claimed");
+        }
+        this.status = ItemStatus.CLAIMED;
+    }
+
+    /** CLAIMED → RETURNED, when the poster confirms the item went back to its owner. */
+    public void markReturned() {
+        if (status != ItemStatus.CLAIMED) {
+            throw new IllegalStateException("Only a claimed item can be marked as returned");
+        }
+        this.status = ItemStatus.RETURNED;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return owner.getId().equals(userId);
     }

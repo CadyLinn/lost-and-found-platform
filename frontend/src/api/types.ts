@@ -52,6 +52,41 @@ export interface ItemInput {
   verificationQuestion: string | null
 }
 
+export type ClaimStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface Claim {
+  id: number
+  itemId: number
+  itemTitle: string
+  itemType: ItemType
+  itemStatus: ItemStatus
+  status: ClaimStatus
+  answer: string | null
+  message: string
+  claimantId: number
+  claimantDisplayName: string
+  /** The other person's email; only present once the claim is approved. */
+  contactEmail: string | null
+  createdAt: string
+  decidedAt: string | null
+}
+
+export type NotificationType = 'CLAIM_RECEIVED' | 'CLAIM_APPROVED' | 'CLAIM_REJECTED' | 'ITEM_RETURNED'
+
+export interface Notification {
+  id: number
+  type: NotificationType
+  itemId: number | null
+  itemTitle: string | null
+  read: boolean
+  createdAt: string
+}
+
+export interface NotificationList {
+  unreadCount: number
+  notifications: Notification[]
+}
+
 export interface Page<T> {
   content: T[]
   page: number

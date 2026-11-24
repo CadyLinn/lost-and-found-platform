@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api } from '../api/endpoints'
 import { useAuth } from '../auth/AuthContext'
+import { ClaimSection } from '../components/ClaimSection'
 import { ErrorBox, Spinner, StatusBadge, TypeBadge } from '../components/ui'
 import { categoryLabel, formatDate, STATUS_LABELS } from '../lib/labels'
 import { buttonDanger, buttonSecondary } from '../lib/styles'
@@ -63,7 +64,7 @@ export function ItemDetailPage() {
           <div className="mt-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <span className="font-medium">驗證問題：</span>
             {data.verificationQuestion}
-            <p className="mt-1 text-xs text-amber-800">認領時需要回答這個問題（認領功能開發中）</p>
+            <p className="mt-1 text-xs text-amber-800">認領時需要回答這個問題</p>
           </div>
         )}
 
@@ -90,6 +91,8 @@ export function ItemDetailPage() {
           </div>
         )}
       </div>
+
+      <ClaimSection item={data} />
     </article>
   )
 }

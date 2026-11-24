@@ -17,6 +17,15 @@ const MESSAGES: Record<string, string> = {
   'Item not found': '找不到這篇貼文',
   'You can only change your own items': '你只能修改自己的貼文',
   'Unknown category': '分類不存在',
+  'You cannot claim your own item': '不能認領自己的貼文',
+  'This item is no longer open': '這篇貼文已經結束，無法再認領',
+  'You have already responded to this item': '你已經回應過這篇貼文了',
+  'Please answer the verification question': '請回答驗證問題',
+  'Only the poster can manage claims': '只有發文者可以處理認領',
+  'This claim has already been decided': '這個認領已經處理過了',
+  'Only a claimed item can be marked as returned': '要先接受一個認領，才能標記為已歸還',
+  'Claim not found': '找不到這個認領',
+  'Notification not found': '找不到這則通知',
 }
 
 function fallbackMessage(status: number): string {

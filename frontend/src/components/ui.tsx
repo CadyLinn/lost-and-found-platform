@@ -1,6 +1,19 @@
 import type { ReactNode } from 'react'
-import type { ItemStatus, ItemType } from '../api/types'
-import { STATUS_LABELS, TYPE_LABELS } from '../lib/labels'
+import type { ClaimStatus, ItemStatus, ItemType } from '../api/types'
+import { CLAIM_STATUS_LABELS, STATUS_LABELS, TYPE_LABELS } from '../lib/labels'
+
+export function ClaimStatusBadge({ status }: { status: ClaimStatus }) {
+  const color = {
+    PENDING: 'bg-amber-50 text-amber-800 ring-amber-200',
+    APPROVED: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+    REJECTED: 'bg-slate-100 text-slate-600 ring-slate-200',
+  }[status]
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${color}`}>
+      {CLAIM_STATUS_LABELS[status]}
+    </span>
+  )
+}
 
 export function TypeBadge({ type }: { type: ItemType }) {
   const color = type === 'LOST' ? 'bg-rose-50 text-rose-700 ring-rose-200' : 'bg-emerald-50 text-emerald-700 ring-emerald-200'
