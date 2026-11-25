@@ -1,4 +1,4 @@
-import type { ClaimStatus, ItemStatus, ItemType, MatchReason, NotificationType } from '../api/types'
+import type { ClaimStatus, ItemStatus, ItemType, MatchReason, NotificationType, ReportReason } from '../api/types'
 
 // Category names are stored in English in the database; this is how we display them.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -45,6 +45,8 @@ export function notificationText(type: NotificationType, itemTitle: string | nul
       return `${title}已標記為歸還 🎉`
     case 'MATCH_FOUND':
       return `新貼文${title}可能和你的貼文是同一件東西，去看看吧`
+    case 'ITEM_HIDDEN':
+      return `你的貼文${title}已被管理員隱藏，點進去可以看到原因`
   }
 }
 
@@ -71,4 +73,11 @@ export const MATCH_REASON_LABELS: Record<MatchReason, string> = {
   CLOSE_IN_TIME: '時間接近',
   NEARBY: '地點很近',
   SIMILAR_DESCRIPTION: '描述相似',
+}
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  SPAM: '廣告或垃圾訊息',
+  SCAM: '詐騙',
+  INAPPROPRIATE: '不當內容',
+  OTHER: '其他',
 }

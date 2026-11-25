@@ -49,6 +49,9 @@ export interface Item {
   /** Only present when searching near a point. */
   distanceKm: number | null
   photos: Photo[]
+  /** Hidden by an admin. Only the author and admins ever receive hidden posts. */
+  hidden: boolean
+  hiddenReason: string | null
 }
 
 export interface ItemInput {
@@ -83,6 +86,7 @@ export interface Claim {
 }
 
 export type NotificationType = 'CLAIM_RECEIVED' | 'CLAIM_APPROVED' | 'CLAIM_REJECTED' | 'ITEM_RETURNED' | 'MATCH_FOUND'
+  | 'ITEM_HIDDEN'
 
 export interface Notification {
   id: number
@@ -106,6 +110,31 @@ export interface Match {
   score: number
   reasons: MatchReason[]
   distanceKm: number | null
+}
+
+export type ReportReason = 'SPAM' | 'SCAM' | 'INAPPROPRIATE' | 'OTHER'
+export type ReportStatus = 'OPEN' | 'RESOLVED' | 'DISMISSED'
+
+export interface Report {
+  id: number
+  itemId: number
+  itemTitle: string
+  itemHidden: boolean
+  itemOwnerDisplayName: string
+  reporterDisplayName: string
+  reason: ReportReason
+  details: string | null
+  status: ReportStatus
+  createdAt: string
+  handledAt: string | null
+  handledByDisplayName: string | null
+}
+
+export interface AdminStats {
+  users: number
+  items: number
+  openReports: number
+  hiddenItems: number
 }
 
 export interface Page<T> {

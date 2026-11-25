@@ -53,8 +53,15 @@ jobs:
           APP_RATELIMIT_ENABLED=false docker compose --profile app up -d --build
           for i in $(seq 1 60); do curl -sf http://localhost:8000/api/categories > /dev/null && exit 0; sleep 3; done
           docker compose --profile app logs backend; exit 1
+      - name: Create an admin account (the same way as in production)
+        run: |
+          curl -sf -X POST http://localhost:8000/api/auth/register -H 'Content-Type: application/json' \
+            -d '{"email":"admin@e2e.test","password":"password123","displayName":"E2E Admin"}'
+          scripts/make-admin.sh admin@e2e.test
       - name: Run Playwright
         working-directory: frontend
+        env:
+          E2E_ADMIN_EMAIL: admin@e2e.test
         run: |
           npm ci
           npx playwright install --with-deps chromium

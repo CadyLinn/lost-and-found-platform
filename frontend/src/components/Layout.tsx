@@ -60,6 +60,11 @@ export function Layout() {
                 <NavLink to="/me/claims" className={navLink}>
                   我的認領
                 </NavLink>
+                {user?.role === 'ADMIN' && (
+                  <NavLink to="/admin" className={navLink}>
+                    管理
+                  </NavLink>
+                )}
               </>
             )}
           </nav>
@@ -76,8 +81,10 @@ export function Layout() {
                   type="button"
                   className="text-sm text-slate-500 hover:text-slate-900"
                   onClick={() => {
+                    // Leave the page *synchronously* before logging out. Otherwise React may draw the
+                    // logout first, and a login-only page would redirect to /login instead of home.
+                    navigate('/', { flushSync: true })
                     logout()
-                    navigate('/')
                   }}
                 >
                   登出

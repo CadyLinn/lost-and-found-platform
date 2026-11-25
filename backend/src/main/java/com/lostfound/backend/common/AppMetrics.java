@@ -30,6 +30,11 @@ public class AppMetrics {
         counter("lostfound.matches.notified").increment();
     }
 
+    /** action: reported, hidden, unhidden, dismissed */
+    public void moderation(String action) {
+        counter("lostfound.moderation", "action", action).increment();
+    }
+
     /** reason: ip_limit or account_locked */
     public void rateLimited(String reason, String path) {
         counter("lostfound.ratelimit.rejected", "reason", reason, "path", path).increment();

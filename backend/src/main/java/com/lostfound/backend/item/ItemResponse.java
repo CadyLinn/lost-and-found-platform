@@ -29,7 +29,10 @@ public record ItemResponse(
         Instant createdAt,
         Instant updatedAt,
         Double distanceKm,
-        List<PhotoResponse> photos
+        List<PhotoResponse> photos,
+        /* Only the author and admins can ever see a hidden post. */
+        boolean hidden,
+        String hiddenReason
 ) implements Serializable {
 
     public static ItemResponse from(Item item) {
@@ -61,7 +64,9 @@ public record ItemResponse(
                 item.getCreatedAt(),
                 item.getUpdatedAt(),
                 distanceKm,
-                new ArrayList<>(item.getPhotos().stream().map(PhotoResponse::from).toList())
+                new ArrayList<>(item.getPhotos().stream().map(PhotoResponse::from).toList()),
+                item.isHidden(),
+                item.getHiddenReason()
         );
     }
 }

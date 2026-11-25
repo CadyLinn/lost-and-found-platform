@@ -31,7 +31,7 @@ public class CacheConfig implements CachingConfigurer {
     RedisCacheManagerBuilderCustomizer itemCaches() {
         // Bump the version in the prefix when cached classes change shape, so old entries are ignored.
         RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
-                .prefixCacheNameWith("lostfound:v1:")
+                .prefixCacheNameWith("lostfound:v2:")
                 .disableCachingNullValues();
         return builder -> builder
                 .cacheDefaults(defaults)

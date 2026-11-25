@@ -26,6 +26,8 @@ const wallet: Item = {
   updatedAt: '2026-11-20T10:00:00Z',
   distanceKm: null,
   photos: [],
+  hidden: false,
+  hiddenReason: null,
 }
 
 const bobsClaim: Claim = {

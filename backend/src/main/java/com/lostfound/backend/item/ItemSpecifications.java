@@ -18,6 +18,7 @@ final class ItemSpecifications {
         return (root, query, builder) -> {
             HibernateCriteriaBuilder cb = (HibernateCriteriaBuilder) builder;
             List<Predicate> where = new ArrayList<>();
+            where.add(cb.isNull(root.get("hiddenAt"))); // hidden posts never appear in public search
 
             if (c.type() != null) where.add(cb.equal(root.get("type"), c.type()));
             if (c.status() != null) where.add(cb.equal(root.get("status"), c.status()));

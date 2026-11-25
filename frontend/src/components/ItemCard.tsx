@@ -37,7 +37,11 @@ export function ItemCard({ item }: { item: Item }) {
             📍 {item.locationText}
             {item.distanceKm != null && <span className="ml-1 text-teal-700">· {formatDistance(item.distanceKm)}</span>}
           </dd>
-          <StatusBadge status={item.status} />
+          {item.hidden ? (
+            <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">已隱藏</span>
+          ) : (
+            <StatusBadge status={item.status} />
+          )}
         </div>
       </dl>
       </div>

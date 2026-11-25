@@ -45,6 +45,10 @@ const MESSAGES: Record<string, string> = {
   'A post can have at most 5 photos': '每篇貼文最多 5 張照片',
   'Photos must be 5 MB or smaller': '照片不能超過 5 MB',
   'Photo not found': '找不到這張照片',
+  'You cannot report your own item': '不能檢舉自己的貼文',
+  'You have already reported this item': '你已經檢舉過這篇貼文了',
+  'This item is already hidden': '這篇貼文已經是隱藏的',
+  'This item is not hidden': '這篇貼文沒有被隱藏',
 }
 
 function fallbackMessage(status: number): string {
@@ -132,8 +136,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new ApiError(response.status, message)
   }
 
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
+  // Some successful responses have no body (204 No Content, or 201 Created for a report).
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }
 
 async function send(path: string, { method = 'GET', body }: RequestOptions, session: Session | null) {

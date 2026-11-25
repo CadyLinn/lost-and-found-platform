@@ -4,7 +4,9 @@ import { RouterProvider } from 'react-router/dom'
 import { ApiError } from './api/client'
 import { AuthProvider } from './auth/AuthProvider'
 import { Layout } from './components/Layout'
+import { RequireAdmin } from './components/RequireAdmin'
 import { RequireAuth } from './components/RequireAuth'
+import { AdminPage } from './pages/AdminPage'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
 import { EditItemPage } from './pages/EditItemPage'
 import { ItemDetailPage } from './pages/ItemDetailPage'
@@ -36,6 +38,7 @@ const router = createBrowserRouter([
       { path: '/me/items', element: <RequireAuth><MyItemsPage /></RequireAuth> },
       { path: '/me/claims', element: <RequireAuth><MyClaimsPage /></RequireAuth> },
       { path: '/notifications', element: <RequireAuth><NotificationsPage /></RequireAuth> },
+      { path: '/admin', element: <RequireAdmin><AdminPage /></RequireAdmin> },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '*', element: <NotFound /> },

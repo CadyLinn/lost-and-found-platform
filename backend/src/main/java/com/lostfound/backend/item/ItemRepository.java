@@ -25,6 +25,12 @@ public interface ItemRepository extends JpaRepository<Item, Long>, JpaSpecificat
     @EntityGraph(attributePaths = {"owner", "category"})
     Page<Item> findByOwnerId(Long ownerId, Pageable pageable);
 
+    /** For admins: every hidden post, most recently hidden first. */
+    @EntityGraph(attributePaths = {"owner", "category"})
+    java.util.List<Item> findByHiddenAtIsNotNullOrderByHiddenAtDesc();
+
+    long countByHiddenAtIsNotNull();
+
     /** Locks the row until the transaction ends, so two people can't change its status at the same time. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Item i join fetch i.owner join fetch i.category where i.id = :id")

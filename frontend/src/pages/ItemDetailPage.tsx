@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api } from '../api/endpoints'
 import { useAuth } from '../auth/AuthContext'
+import { AdminItemActions } from '../components/AdminItemActions'
 import { ClaimSection } from '../components/ClaimSection'
 import { MatchesSection } from '../components/MatchesSection'
 import { PhotoGallery } from '../components/PhotoGallery'
+import { ReportButton } from '../components/ReportButton'
 import { ErrorBox, Spinner, StatusBadge, TypeBadge } from '../components/ui'
 import { categoryLabel, formatDate, STATUS_LABELS } from '../lib/labels'
 import { buttonDanger, buttonSecondary } from '../lib/styles'
@@ -33,12 +35,20 @@ export function ItemDetailPage() {
 
   const data = item.data
   const isOwner = user?.id === data.ownerId
+  const isAdmin = user?.role === 'ADMIN'
 
   return (
     <article className="mx-auto max-w-2xl">
       <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">
         ← 回到列表
       </Link>
+
+      {data.hidden && (
+        <div role="status" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="font-medium">這篇貼文已被管理員隱藏，其他人看不到。</p>
+          {data.hiddenReason && <p className="mt-1">原因：{data.hiddenReason}</p>}
+        </div>
+      )}
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
         <PhotoGallery photos={data.photos} title={data.title} />
@@ -96,8 +106,18 @@ export function ItemDetailPage() {
         )}
       </div>
 
-      <ClaimSection item={data} />
+      {(!data.hidden || isOwner) && <ClaimSection item={data} />}
       <MatchesSection item={data} />
+
+      <div className="mt-8 flex flex-wrap items-start justify-between gap-4">
+        {user && !isOwner && !data.hidden ? <ReportButton itemId={data.id} /> : <span />}
+        {isAdmin && (
+          <div className="text-right">
+            <p className="mb-2 text-xs text-slate-400">管理員操作</p>
+            <AdminItemActions item={data} />
+          </div>
+        )}
+      </div>
     </article>
   )
 }

@@ -53,6 +53,9 @@ public class ClaimService {
         Item item = itemRepository.findWithDetailsById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
 
+        if (item.isHidden()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found");
+        }
         if (item.isOwnedBy(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot claim your own item");
         }

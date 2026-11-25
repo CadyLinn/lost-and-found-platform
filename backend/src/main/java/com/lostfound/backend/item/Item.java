@@ -55,6 +55,15 @@ public class Item {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    /** Set when an admin hides the post; null while it's visible. */
+    private Instant hiddenAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hidden_by")
+    private User hiddenBy;
+
+    private String hiddenReason;
+
     /** Loaded on demand; for a page of items, Hibernate fetches all their photos in one extra query. */
     @OneToMany(mappedBy = "item", cascade = CascadeType.REMOVE)
     @OrderBy("sortOrder ASC")
@@ -113,6 +122,23 @@ public class Item {
         this.status = ItemStatus.RETURNED;
     }
 
+    /** Admin action: take the post out of public view, keeping its data. */
+    public void hide(User admin, String reason) {
+        this.hiddenAt = Instant.now();
+        this.hiddenBy = admin;
+        this.hiddenReason = reason;
+    }
+
+    public void unhide() {
+        this.hiddenAt = null;
+        this.hiddenBy = null;
+        this.hiddenReason = null;
+    }
+
+    public boolean isHidden() {
+        return hiddenAt != null;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return owner.getId().equals(userId);
     }
@@ -132,4 +158,5 @@ public class Item {
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public List<ItemPhoto> getPhotos() { return photos; }
+    public String getHiddenReason() { return hiddenReason; }
 }

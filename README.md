@@ -23,6 +23,9 @@ suggestions** between lost and found posts, and returning items through a **veri
   - Accepting one claim declines the others, and only then do both people see each other's email.
   - The poster marks the item as returned to close the post.
 - **Notifications.** In-app notifications with an unread badge.
+- **Moderation.** Users can report a post. Admins get a dashboard with open reports grouped by post, and can hide a
+  post (it disappears from search, matches and its page, but its author still sees it with the reason) or dismiss
+  the reports. Hidden posts can be restored.
 - **Abuse protection.**
   - Per-IP rate limits on login, register and refresh.
   - An account lockout after repeated wrong passwords.
@@ -47,6 +50,19 @@ Optional extras:
 docker compose --profile monitoring up -d                     # Grafana → http://localhost:3000
 docker exec -i infra-postgres-1 psql -U lostfound -d lostfound < ../load-tests/seed.sql   # 2,000 sample posts
 ```
+
+## Admin accounts
+
+There is no way to become an admin through the website. Register normally, then run on the server:
+
+```bash
+scripts/make-admin.sh someone@example.com            # make admin
+scripts/make-admin.sh someone@example.com --revoke   # back to a normal user
+```
+
+The role is read from the database at login and stored in the access token, so it applies at the next login
+or within 15 minutes. Promoting by an email listed in a config file was avoided on purpose: emails aren't
+verified, so someone could register that address first.
 
 ## Develop
 
@@ -84,6 +100,7 @@ service and a repository, and the API only ever sends DTOs, never JPA entities.
 | `match` | scoring (`MatchScorer`, `TextSimilarity`) and top-K selection (`TopK`) |
 | `claim` | the claim lifecycle, with a row lock so two approvals can't both win |
 | `notification` | in-app notifications |
+| `moderation` | reports, hiding posts, the admin API |
 | `photo` | uploads, image checks and resizing (`ImageProcessor`), storage (`PhotoStorage`) |
 | `security` | rate limiting and account lockout (Redis counters) |
 | `config` | security, JWT keys, cache setup |
@@ -148,16 +165,20 @@ All endpoints are under `/api`. Errors are RFC 7807 problem details (`{"status":
 | GET / POST | `/notifications`, `/notifications/{id}/read`, `/notifications/read-all` | ✓ | notifications |
 | POST / DELETE | `/items/{id}/photos` (multipart `file`), `/items/{id}/photos/{photoId}` | ✓ owner | add or remove a photo |
 | GET | `/photos/{uuid}.jpg`, `/photos/{uuid}_thumb.jpg` | – | photo files (cached by browsers for a year) |
+| POST | `/items/{id}/reports` | ✓ | report someone else's post |
+| GET | `/admin/stats`, `/admin/reports?status=`, `/admin/items/hidden` | admin | moderation dashboard |
+| POST | `/admin/items/{id}/hide`, `/admin/items/{id}/unhide`, `/admin/items/{id}/dismiss-reports` | admin | moderation actions |
 
 ## Testing
 
 ```bash
-cd backend && ./gradlew test     # 81 tests: unit + integration (Testcontainers starts real Postgres and Redis)
-cd frontend && npm test          # 27 unit and component tests (Vitest + Testing Library)
+cd backend && ./gradlew test     # 87 tests: unit + integration (Testcontainers starts real Postgres and Redis)
+cd frontend && npm test          # 33 unit and component tests (Vitest + Testing Library)
 
 # End-to-end: a real browser clicks through the running site (Playwright)
 cd infra && APP_RATELIMIT_ENABLED=false docker compose --profile app up -d --build
-cd frontend && npm run test:e2e
+scripts/make-admin.sh <an account you registered>     # for the moderation test
+cd frontend && E2E_ADMIN_EMAIL=<that email> npm run test:e2e
 ```
 
 - **Unit tests** cover the matching algorithm (tokenizing, scoring rules, and `TopK` checked against a full sort on
@@ -174,8 +195,10 @@ cd frontend && npm run test:e2e
   - form validation, the login redirect, and what the claim section shows to visitors and posters
 - **End-to-end tests** (Playwright, real Chrome) run the whole story: register → post a found item with a photo →
   another user finds it by search and claims it → the finder is notified, accepts, sees the contact email and
-  marks it returned. This test caught a real bug: posts dated "today" were rejected between midnight and 8 a.m. in
-  Taiwan, because the server compared dates in UTC.
+  marks it returned. A second test covers moderation: report → admin hides → gone from search → the author is told
+  why. These tests caught real bugs: posts dated "today" were rejected between midnight and 8 a.m. in
+  Taiwan, because the server compared dates in UTC; reports showed an error although they succeeded (an empty `201`
+  response); and logging out on a login-only page landed on the login page instead of home.
 - **Load tests** use k6 (`load-tests/browse.js`). The latest numbers are in **[docs/perf.md](docs/perf.md)**:
   - about 4,300 requests/s on a laptop
   - p95 latency of 9 ms under stress

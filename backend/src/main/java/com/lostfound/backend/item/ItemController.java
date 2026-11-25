@@ -66,8 +66,15 @@ public class ItemController {
 
     /** Public: one item's details. */
     @GetMapping("/api/items/{id}")
-    public ItemResponse get(@PathVariable Long id) {
-        return itemService.get(id);
+    public ItemResponse get(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        ItemResponse item = itemService.get(id);
+        // A hidden post looks like it doesn't exist, except to its author and to admins.
+        boolean canSeeHidden = jwt != null
+                && (item.ownerId().equals(userId(jwt)) || "ADMIN".equals(jwt.getClaimAsString("role")));
+        if (item.hidden() && !canSeeHidden) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found");
+        }
+        return item;
     }
 
     @PostMapping("/api/items")

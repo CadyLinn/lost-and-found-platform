@@ -59,8 +59,8 @@ public class MatchService {
     public List<MatchResponse> matchesFor(Long itemId, int limit) {
         Item item = itemRepository.findWithDetailsById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        if (item.getStatus() != ItemStatus.OPEN) {
-            return List.of(); // already claimed or closed: nothing left to match
+        if (item.getStatus() != ItemStatus.OPEN || item.isHidden()) {
+            return List.of(); // already claimed, closed or hidden: nothing left to match
         }
         return findBest(item, limit).stream()
                 .map(s -> new MatchResponse(
@@ -102,6 +102,7 @@ public class MatchService {
                 cb.equal(root.get("type"), opposite),
                 cb.equal(root.get("status"), ItemStatus.OPEN),
                 cb.notEqual(root.get("owner").get("id"), ownerId),
+                cb.isNull(root.get("hiddenAt")),
                 cb.between(root.<LocalDate>get("eventDate"), from, to));
 
         var newestFirst = PageRequest.of(0, MAX_CANDIDATES, Sort.by(Sort.Direction.DESC, "createdAt"));

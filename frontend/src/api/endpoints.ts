@@ -1,5 +1,6 @@
 import { request } from './client'
 import type {
+  AdminStats,
   Category,
   Claim,
   Item,
@@ -9,6 +10,9 @@ import type {
   NotificationList,
   Page,
   Photo,
+  Report,
+  ReportReason,
+  ReportStatus,
   TokenResponse,
   User,
 } from './types'
@@ -69,6 +73,20 @@ export const api = {
   approveClaim: (claimId: number) => request<Claim>(`/claims/${claimId}/approve`, { method: 'POST' }),
   rejectClaim: (claimId: number) => request<Claim>(`/claims/${claimId}/reject`, { method: 'POST' }),
   markReturned: (itemId: number) => request<Item>(`/items/${itemId}/returned`, { method: 'POST' }),
+
+  reportItem: (itemId: number, reason: ReportReason, details: string | null) =>
+    request<void>(`/items/${itemId}/reports`, { method: 'POST', body: { reason, details } }),
+
+  admin: {
+    stats: () => request<AdminStats>('/admin/stats'),
+    reports: (status: ReportStatus) => request<Report[]>(`/admin/reports?status=${status}`),
+    hiddenItems: () => request<Item[]>('/admin/items/hidden'),
+    hide: (itemId: number, reason: string | null) =>
+      request<Item>(`/admin/items/${itemId}/hide`, { method: 'POST', body: { reason } }),
+    unhide: (itemId: number) => request<Item>(`/admin/items/${itemId}/unhide`, { method: 'POST' }),
+    dismissReports: (itemId: number) =>
+      request<{ dismissed: number }>(`/admin/items/${itemId}/dismiss-reports`, { method: 'POST' }),
+  },
 
   notifications: () => request<NotificationList>('/notifications'),
   markNotificationRead: (id: number) => request<void>(`/notifications/${id}/read`, { method: 'POST' }),

@@ -93,6 +93,14 @@ describe('API client', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
+  it('accepts successful responses that have no body', async () => {
+    fakeFetch(() => new Response(null, { status: 201 }))
+    await expect(request('/items/1/reports', { method: 'POST', body: {} })).resolves.toBeUndefined()
+
+    fakeFetch(() => new Response(null, { status: 204 }))
+    await expect(request('/notifications/read-all', { method: 'POST' })).resolves.toBeUndefined()
+  })
+
   it('reports a friendly message when the server is unreachable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 
