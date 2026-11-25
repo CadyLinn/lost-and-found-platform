@@ -2,9 +2,10 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/lostfound
-    username: lostfound
-    password: lostfound123
+    # Defaults are for local development. Hosts like Render pass DB_HOST etc. (or SPRING_DATASOURCE_URL).
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:lostfound}
+    username: ${DB_USER:lostfound}
+    password: ${DB_PASSWORD:lostfound123}
   mvc:
     problemdetails:
       enabled: true
@@ -22,6 +23,10 @@ spring:
       port: 6379
       repositories:
         enabled: false
+
+server:
+  # Render (and similar hosts) tell the app which port to listen on.
+  port: ${PORT:8080}
 
 management:
   # Actuator (health + metrics) runs on its own port, so it is never reachable through the public port 8080.

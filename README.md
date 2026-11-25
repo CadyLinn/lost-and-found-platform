@@ -51,6 +51,44 @@ docker compose --profile monitoring up -d                     # Grafana → http
 docker exec -i infra-postgres-1 psql -U lostfound -d lostfound < ../load-tests/seed.sql   # 2,000 sample posts
 ```
 
+## Deploying to Render
+
+The repository includes a Render **Blueprint** (`render.yaml`). It creates three things on Render's free plans,
+in the Singapore region:
+
+| Render resource | What it is |
+|---|---|
+| Web service `lost-and-found` | One container (root `Dockerfile`) serving both the React app and the API |
+| Key Value `lost-and-found-redis` | Redis for caching, refresh tokens and rate limits. Private: only our service can reach it |
+| PostgreSQL `lost-and-found-db` | The database. No access from the internet by default |
+
+Steps:
+
+1. Push this repository to GitHub.
+2. In the [Render dashboard](https://dashboard.render.com): **New → Blueprint**, connect the repository, then **Apply**.
+3. Wait for the first build (about 10 minutes). The site is at `https://lost-and-found-<something>.onrender.com`.
+
+Render generates `JWT_SECRET` and fills in the database and Redis settings. Each push to `main` redeploys.
+
+**To make yourself an admin on Render:**
+1. Register on the live site.
+2. In the database's **Info** page, under **Networking / Access Control**, temporarily allow your own IP address.
+3. Copy the **External Database URL**, then run:
+   ```bash
+   DATABASE_URL='<External Database URL>' scripts/make-admin.sh you@example.com
+   ```
+4. Remove your IP address from the allow list again.
+
+**Free-plan limits:**
+- The service sleeps after 15 minutes without visitors, and the next visit takes about a minute.
+- **Uploaded photos are temporary.** They're stored on the service's own disk, which is wiped whenever it sleeps
+  or redeploys. Keeping photos would need a paid instance with a disk, or an S3-compatible store (the
+  `PhotoStorage` interface is where that would plug in).
+- The free database expires after 30 days.
+
+The same image can be tried locally with Render's 512 MB memory limit. Every end-to-end test was run against it
+this way, with the Content-Security-Policy active.
+
 ## Admin accounts
 
 There is no way to become an admin through the website. Register normally, then run on the server:
@@ -237,8 +275,8 @@ Metrics are served on the management port **8081**, which is separate from the p
 
 ## Not done yet
 
-- S3 storage for photos. Photos are on a local volume today, which is fine for one server.
-- Deployment to a public host with HTTPS.
+- S3 storage for photos. Photos are on a local volume today, which is fine for one server, but on Render's free
+  plan they don't survive a restart.
 
 ## Project structure
 

@@ -1,0 +1,66 @@
+# Render Blueprint: creates the whole site on Render's free plans.
+# In the Render dashboard: New → Blueprint → pick this repository → Apply.
+#
+# Free-plan limits (see README "Deploying to Render"):
+#  - the web service sleeps after 15 minutes without visitors and takes ~1 minute to wake up;
+#  - uploaded photos are kept on the service's own disk, which is wiped when it sleeps or redeploys;
+#  - the free database expires after 30 days.
+
+services:
+  - type: web
+    name: lost-and-found
+    runtime: docker
+    plan: free
+    region: singapore          # closest Render region to Taiwan
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeploy: true           # redeploys on every push to the main branch
+    envVars:
+      - key: PORT
+        value: "8080"
+      # Health check on the same port (Render exposes only one); show health only, no metrics.
+      - key: MANAGEMENT_PORT
+        value: "8080"
+      - key: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+        value: health
+      # Database (Render fills these in from the database below).
+      - key: DB_HOST
+        fromDatabase: { name: lost-and-found-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: lost-and-found-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: lost-and-found-db, property: database }
+      - key: DB_USER
+        fromDatabase: { name: lost-and-found-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: lost-and-found-db, property: password }
+      # Redis (Render Key Value).
+      - key: SPRING_DATA_REDIS_URL
+        fromService: { type: keyvalue, name: lost-and-found-redis, property: connectionString }
+      # A random secret Render generates once and keeps.
+      - key: JWT_SECRET
+        generateValue: true
+      # The site is served over HTTPS, so the login cookie must only travel over HTTPS.
+      - key: REFRESH_COOKIE_SECURE
+        value: "true"
+      # Render's load balancer sits in front: trust its X-Forwarded-For so rate limits see real client IPs.
+      - key: SERVER_FORWARD_HEADERS_STRATEGY
+        value: native
+      # The free instance has 512 MB of memory: leave room for everything that isn't the Java heap.
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=60 -XX:+UseSerialGC"
+
+  - type: keyvalue
+    name: lost-and-found-redis
+    plan: free
+    region: singapore
+    ipAllowList: []             # reachable only from our own Render services, not the internet
+    maxmemoryPolicy: volatile-lru  # everything we store has an expiry; drop the oldest first if full
+
+databases:
+  - name: lost-and-found-db
+    plan: free
+    region: singapore
+    databaseName: lostfound
+    user: lostfound
+    ipAllowList: []             # no direct access from the internet (use the dashboard's tools instead)

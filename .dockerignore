@@ -1,0 +1,15 @@
+# Keep the build context small, and never send secrets or local data into an image.
+.git
+**/node_modules
+**/build
+**/.gradle
+**/dist
+**/.DS_Store
+**/.idea
+**/.env
+backend/data
+frontend/test-results
+frontend/playwright-report
+load-tests
+docs
+infra
